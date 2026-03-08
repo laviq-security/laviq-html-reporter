@@ -1,0 +1,1774 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Laviq PQC Audit Report</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f1f5f9;
+  --white:#ffffff;
+  --hover:#f8fafc;
+  --border:#e2e8f0;
+  --text:#0f172a;
+  --dim:#64748b;
+  --light:#94a3b8;
+
+  --crit:#dc2626;  --crit-bg:#fef2f2;  --crit-bd:#fecaca;
+  --warn:#d97706;  --warn-bg:#fffbeb;  --warn-bd:#fde68a;
+  --med:#7c3aed;   --med-bg:#f5f3ff;   --med-bd:#ddd6fe;
+  --safe:#059669;  --safe-bg:#ecfdf5;  --safe-bd:#a7f3d0;
+  --blue:#2563eb;  --blue-bg:#eff6ff;  --blue-bd:#bfdbfe;
+
+  --mono: 'JetBrains Mono', monospace;
+  --sans: 'Inter', sans-serif;
+  --r: 8px;
+  --sh: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04);
+}
+
+body {
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.5;
+}
+nav {
+  background: var(--white);
+  border-bottom: 1px solid var(--border);
+  padding: 0 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 64px;
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  box-shadow: var(--sh);
+}
+.nleft  { display: flex; align-items: center; gap: 12px; }
+.lm {
+  width: 36px; height: 36px;
+  background: linear-gradient(135deg, #2563eb, #7c3aed);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--mono); font-size: 13px; font-weight: 700; color: #fff;
+}
+.lt     { font-weight: 700; font-size: 20px; letter-spacing: -.5px; }
+.lt em  { color: var(--blue); font-style: normal; }
+.ldiv   { width: 1px; height: 22px; background: var(--border); }
+.lsub   { font-size: 13px; color: var(--dim); }
+.nright { display: flex; align-items: center; gap: 12px; }
+.ndate  { font-size: 11px; color: var(--light); font-family: var(--mono); }
+.stbadge {
+  display: flex; align-items: center; gap: 5px;
+  padding: 4px 11px; border-radius: 20px;
+  background: var(--safe-bg); border: 1px solid var(--safe-bd);
+  font-size: 11px; font-weight: 500; color: var(--safe);
+}
+.sdot { width: 5px; height: 5px; border-radius: 50%; background: var(--safe); animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
+.tabbar {
+  background: var(--white);
+  border-bottom: 1px solid var(--border);
+  padding: 0 32px;
+  display: flex;
+  position: sticky;
+  top: 64px;
+  z-index: 100;
+}
+.tab {
+  display: flex; align-items: center; gap: 8px;
+  padding: 0 20px; height: 44px;
+  font-size: 13px; font-weight: 500; color: var(--dim);
+  cursor: pointer; border-bottom: 2px solid transparent;
+  transition: all .15s; white-space: nowrap; user-select: none;
+  letter-spacing: -.1px;
+}
+.tab:hover            { color: var(--text); background: var(--bg); }
+.tab.active           { color: var(--blue); border-bottom-color: var(--blue); }
+.tab-chip {
+  font-family: var(--mono); font-size: 10px; font-weight: 600;
+  padding: 1px 7px; border-radius: 10px;
+  background: var(--bg); border: 1px solid var(--border); color: var(--dim);
+}
+.tab.active .tab-chip { background: var(--blue-bg); border-color: var(--blue-bd); color: var(--blue); }
+.tab-chip-vuln        { background: var(--crit-bg) !important; border-color: var(--crit-bd) !important; color: var(--crit) !important; }
+.panel         { display: none; max-width: 1300px; margin: 0 auto; padding: 28px 32px; }
+.panel.active  { display: block; }
+.exec-row-1 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+.scan-card {
+  background: var(--white); border: 1px solid var(--border);
+  border-radius: var(--r); padding: 20px 24px; box-shadow: var(--sh);
+}
+.sc-title {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .6px; color: var(--light); margin-bottom: 14px;
+}
+.sc-row {
+  display: flex; justify-content: space-between; align-items: baseline;
+  padding: 7px 0; border-bottom: 1px solid var(--border); gap: 12px;
+}
+.sc-row:last-child  { border-bottom: none; padding-bottom: 0; }
+.sc-label           { font-size: 11px; color: var(--dim); white-space: nowrap; flex-shrink: 0; }
+.sc-value           { font-family: var(--mono); font-size: 11px; font-weight: 500; color: var(--text); text-align: right; }
+.sc-stub            { font-family: var(--mono); font-size: 11px; color: var(--light); font-style: italic; text-align: right; }
+.stub-note          { font-size: 9px; color: var(--light); margin-left: 4px; }
+.card {
+  background: var(--white); border: 1px solid var(--border);
+  border-radius: var(--r); padding: 18px 20px;
+  box-shadow: var(--sh); position: relative; overflow: hidden;
+}
+.ca   { position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+.cl   { font-size: 11px; font-weight: 500; color: var(--dim); margin-bottom: 6px; }
+.cv   { font-size: 28px; font-weight: 700; line-height: 1; font-family: var(--mono); }
+.cs   { font-size: 11px; color: var(--light); margin-top: 5px; }
+.exec-row-2 { margin-bottom: 20px; }
+.pqc-card {
+  background: var(--white); border: 1px solid var(--border);
+  border-radius: var(--r); padding: 24px 28px; box-shadow: var(--sh);
+  display: grid; grid-template-columns: auto 1fr; gap: 28px; align-items: center;
+}
+.score-ring {
+  width: 72px; height: 72px; border-radius: 50%; border: 4px solid;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--mono); font-size: 20px; font-weight: 700; flex-shrink: 0;
+}
+.pqc-label     { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: var(--light); margin-bottom: 6px; }
+.pqc-title     { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+.pqc-statement { font-size: 13px; color: var(--dim); line-height: 1.6; max-width: 900px; }
+.pqc-statement strong { color: var(--crit); }
+.exec-row-3 { margin-bottom: 16px; }
+.proc-card {
+  background: var(--white); border: 1px solid var(--border); border-radius: var(--r);
+  box-shadow: var(--sh); overflow: hidden;
+}
+.proc-hdr {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 11px 20px; border-bottom: 1px solid var(--border); background: var(--bg);
+}
+.proc-hdr-left { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 14px; }
+.proc-sub { font-size: 12px; color: var(--dim); }
+.proc-body { padding: 16px 20px; display: flex; flex-direction: column; gap: 0; }
+.proc-row {
+  display: flex; align-items: center; gap: 10px; padding: 10px 14px;
+  border: 1px solid var(--border); border-radius: var(--r); background: var(--white);
+  margin-bottom: 0; flex-wrap: wrap;
+}
+.proc-row.child { margin-left: 32px; margin-top: 8px; background: var(--bg); }
+.proc-pid {
+  font-family: var(--mono); font-size: 10px; font-weight: 600; padding: 2px 8px;
+  border-radius: 4px; background: var(--blue-bg); border: 1px solid var(--blue-bd); color: var(--blue);
+}
+.proc-name { font-weight: 600; font-size: 13px; }
+.proc-exe { font-family: var(--mono); font-size: 11px; color: var(--dim); }
+.proc-disc { font-size: 10px; font-family: var(--mono); padding: 2px 7px; border-radius: 3px; border: 1px solid; }
+.disc-attached { background: #fffbeb; border-color: #fde68a; color: #9a6700; }
+.disc-forked, .disc-executed { background: var(--blue-bg); border-color: var(--blue-bd); color: var(--blue); }
+.proc-libs { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; width: 100%; padding-left: 2px; }
+.proc-lib {
+  font-size: 10px; font-family: var(--mono); padding: 2px 7px; border-radius: 3px;
+  border: 1px solid var(--border); background: var(--bg); color: var(--dim);
+}
+.proc-lib.crypto { background: var(--crit-bg); border-color: var(--crit-bd); color: var(--crit); }
+.proc-lib.dlopen { background: var(--med-bg); border-color: var(--med-bd); color: var(--med); }
+.proc-lib.dormant { background: var(--crit-bg); border-color: var(--crit-bd); color: var(--crit); }
+.proc-findings { margin-left: auto; font-size: 11px; color: var(--dim); }
+.proc-findings strong { color: var(--crit); font-weight: 600; }
+.cbom-card {
+  background: var(--white); border: 1px solid var(--border);
+  border-radius: var(--r); box-shadow: var(--sh); overflow: hidden;
+}
+.cbom-hdr {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 12px 20px; border-bottom: 1px solid var(--border); background: var(--bg);
+}
+.cbom-hdr-left { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 14px; }
+.cbom-badge {
+  font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 4px;
+  background: var(--med-bg); color: var(--med); border: 1px solid var(--med-bd);
+  font-family: var(--mono); letter-spacing: .5px;
+}
+.cbom-sub  { font-size: 12px; color: var(--dim); }
+.cbom-note {
+  padding: 10px 20px; background: #fafbff;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px; color: var(--dim); line-height: 1.5;
+}
+.cbom-note strong { color: var(--text); }
+.cbom-name { font-weight: 600; font-size: 13px; }
+.cbom-type {
+  font-size: 10px; font-family: var(--mono); background: var(--bg);
+  border: 1px solid var(--border); border-radius: 3px;
+  padding: 2px 7px; color: var(--dim); white-space: nowrap;
+}
+.qs-vuln   { font-size: 11px; font-weight: 600; color: var(--crit); }
+.qs-safe   { font-size: 11px; font-weight: 600; color: var(--safe); }
+.nist-tag  {
+  font-size: 10px; font-family: var(--mono); padding: 2px 7px;
+  border-radius: 3px; border: 1px solid; white-space: nowrap; display: inline-block;
+}
+.nist-bad  { background: var(--crit-bg); color: var(--crit); border-color: var(--crit-bd); }
+.nist-ok   { background: var(--safe-bg); color: var(--safe); border-color: var(--safe-bd); }
+.rec-cell  { font-size: 11px; color: var(--dim); word-break: break-word; min-width: 180px; max-width: 300px; }
+.status-tag { font-size: 10px; font-family: var(--mono); padding: 2px 7px; border-radius: 3px; border: 1px solid; white-space: nowrap; }
+.status-active { background: var(--crit-bg); color: var(--crit); border-color: var(--crit-bd); }
+.status-safe { background: var(--safe-bg); color: var(--safe); border-color: var(--safe-bd); }
+.status-dormant { background: #f6f8fa; color: #6e7781; border-color: #d0d7de; }
+.section-divider-row td { padding: 0; border-bottom: none; }
+.section-divider {
+  display: flex; align-items: center; gap: 12px; padding: 7px 14px;
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px;
+  border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+}
+.section-divider-vuln { background: #fff5f5; color: var(--crit); border-color: var(--crit-bd); }
+.section-divider-dormant { background: #f6f8fa; color: #6e7781; border-color: #d0d7de; }
+.section-divider-safe { background: #f0fff4; color: var(--safe); border-color: var(--safe-bd); }
+.dormant-hint {
+  font-size: 10px; font-weight: 400; text-transform: none; letter-spacing: 0;
+  color: var(--light); font-style: italic; margin-left: 4px;
+}
+.key-pending { color: var(--light) !important; font-style: italic; }
+.key-na { color: var(--light) !important; }
+.section {
+  background: var(--white); border: 1px solid var(--border);
+  border-radius: var(--r); margin-bottom: 20px;
+  box-shadow: var(--sh); overflow: hidden;
+}
+.sh {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 12px 20px; border-bottom: 1px solid var(--border); background: var(--bg);
+}
+.st  { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 14px; }
+.ss  { font-size: 12px; color: var(--dim); }
+.etag {
+  font-size: 10px; font-weight: 600; padding: 2px 8px;
+  border-radius: 4px; letter-spacing: .3px; font-family: var(--mono);
+}
+.ea  { background: var(--blue-bg); color: var(--blue); border: 1px solid var(--blue-bd); }
+.eb  { background: var(--med-bg);  color: var(--med);  border: 1px solid var(--med-bd); }
+.cc  {
+  background: var(--white); border: 1px solid var(--border);
+  border-radius: 10px; padding: 1px 8px;
+  font-size: 11px; font-weight: 600; color: var(--dim); font-family: var(--mono);
+}
+table { width: 100%; border-collapse: collapse; }
+th {
+  background: var(--bg); font-size: 10px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .5px; color: var(--dim);
+  padding: 9px 14px; text-align: left;
+  border-bottom: 1px solid var(--border); white-space: nowrap;
+}
+td { padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+tr:last-child td { border-bottom: none; }
+.fr { cursor: pointer; transition: background .1s; }
+.fr:hover { background: var(--hover); }
+.dr { display: none; }
+.dr.open { display: table-row; }
+.pid-cell   { color: var(--blue) !important; font-weight: 600; }
+.algo-name  { font-weight: 600; font-size: 13px; }
+.ver-dim    { color: var(--light); font-weight: 400; }
+.cipher-cell{ max-width: 200px; word-break: break-all; }
+.mc         { font-family: var(--mono); font-size: 11px; color: var(--dim); }
+.cnt        { font-family: var(--mono); font-size: 11px; color: var(--dim); text-align: right; }
+.dtog       { text-align: right; }
+.tbtn {
+  font-size: 11px; font-weight: 500; color: var(--blue);
+  padding: 3px 10px; border: 1px solid var(--blue-bd);
+  border-radius: 4px; background: var(--blue-bg); cursor: pointer; white-space: nowrap;
+}
+.src-chip {
+  font-family: var(--mono); font-size: 10px; background: var(--bg);
+  border: 1px solid var(--border); border-radius: 3px;
+  padding: 2px 6px; color: var(--dim); white-space: nowrap;
+}
+.load-tag {
+  font-size: 10px; font-family: var(--mono); padding: 2px 6px;
+  background: #f0fdf4; border: 1px solid #bbf7d0; color: #15803d; border-radius: 3px;
+}
+.pill       { display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: 500; white-space: nowrap; }
+.pill-v     { background: var(--crit-bg); color: var(--crit); border: 1px solid var(--crit-bd); }
+.pill-s     { background: var(--safe-bg); color: var(--safe); border: 1px solid var(--safe-bd); }
+.badge          { display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: 600; letter-spacing: .2px; }
+.sev-critical,.sev-high       { background: var(--crit-bg); color: var(--crit); border: 1px solid var(--crit-bd); }
+.sev-medium     { background: var(--med-bg);  color: var(--med);  border: 1px solid var(--med-bd); }
+.sev-low        { background: var(--blue-bg); color: var(--blue); border: 1px solid var(--blue-bd); }
+.sev-info       { background: var(--bg);      color: var(--dim);  border: 1px solid var(--border); }
+.sev-safe       { background: var(--safe-bg); color: var(--safe); border: 1px solid var(--safe-bd); }
+.dw {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+  padding: 16px 20px; background: #f8fafc; border-top: 1px solid var(--border);
+}
+.dp  { background: var(--white); border: 1px solid var(--border); border-radius: var(--r); padding: 16px; }
+.dpt {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .6px; color: var(--dim);
+  padding-bottom: 10px; margin-bottom: 12px; border-bottom: 1px solid var(--border);
+}
+.mr  { display: flex; align-items: baseline; gap: 12px; margin-bottom: 8px; flex-wrap: wrap; }
+.mk  { font-size: 11px; font-weight: 500; color: var(--light); min-width: 120px; }
+.rt  { font-size: 13px; color: var(--text); line-height: 1.6; margin-top: 4px; }
+.sb {
+  background: #f6f8fa; border: 1px solid var(--border);
+  border-radius: 6px; padding: 12px;
+  max-height: 200px; overflow-y: auto; font-family: var(--mono);
+}
+.sb::-webkit-scrollbar       { width: 4px; }
+.sb::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+.sf {
+  display: flex; align-items: flex-start; gap: 8px;
+  padding: 5px 0; border-bottom: 1px solid var(--border); flex-wrap: wrap;
+}
+.sf:last-child { border-bottom: none; }
+.stag  { font-size: 9px; font-weight: 500; padding: 1px 5px; border-radius: 3px; border: 1px solid; flex-shrink: 0; }
+.sfn   { font-size: 11px; color: var(--blue); font-weight: 500; }
+.sfl   { font-size: 10px; color: var(--dim); word-break: break-all; }
+.nd    { font-size: 11px; color: var(--dim); font-style: italic; padding: 6px 0; }
+.panel-empty {
+  background: var(--white); border: 1px solid var(--border); border-radius: var(--r);
+  padding: 24px; color: var(--dim);
+}
+footer {
+  text-align: center; padding: 20px 32px;
+  color: var(--light); font-size: 11px;
+  border-top: 1px solid var(--border);
+  background: var(--white); margin-top: 8px;
+}
+footer strong { color: var(--blue); }
+@media print {
+  nav, .tabbar           { position: static !important; }
+  .panel                 { display: block !important; }
+  .fr                    { cursor: default; }
+  .dr                    { display: table-row !important; }
+  .tbtn, .dtog           { display: none; }
+  .section               { break-inside: avoid; box-shadow: none; }
+  body                   { background: white; }
+}</style>
+</head>
+<body>
+<nav>
+  <div class="nleft">
+    <div class="lm">LQ</div>
+    <div class="lt">lav<em>iq</em></div>
+    <div class="ldiv"></div>
+    <div class="lsub">Post-Quantum Cryptography Audit</div>
+  </div>
+  <div class="nright">
+    <span class="ndate">2026-03-07 15:42 UTC</span>
+    <div class="stbadge"><div class="sdot"></div>Scan Complete</div>
+  </div>
+</nav>
+<div class="tabbar">
+  <div class="tab active" onclick="switchTab('exec')">Executive Summary</div>
+  <div class="tab" onclick="switchTab('crypto')">
+    Crypto Findings <span class="tab-chip tab-chip-vuln">23</span>
+  </div>
+  <div class="tab" onclick="switchTab('network')">
+    Network Findings <span class="tab-chip tab-chip-vuln">25</span>
+  </div>
+</div>
+<div class="panel active" id="panel-exec"><div class="exec-row-1"><div class="scan-card"><div class="sc-title">Scan Details</div><div class="sc-row"><span class="sc-label">Target Host</span><span class="sc-value">lima-lima-laviq-ci</span></div><div class="sc-row"><span class="sc-label">OS</span><span class="sc-value">linux</span></div><div class="sc-row"><span class="sc-label">Kernel</span><span class="sc-value">5.15.0-171-generic</span></div><div class="sc-row"><span class="sc-label">PIDs</span><span class="sc-value">54678</span></div><div class="sc-row"><span class="sc-label">Scan Time</span><span class="sc-value">2026-03-07T15:42:00.242161771+00:00</span></div><div class="sc-row"><span class="sc-label">Duration</span><span class="sc-value">18.711255443s</span></div><div class="sc-row"><span class="sc-label">Detection</span><span class="sc-value">eBPF uprobes + kernel TLS</span></div><div class="sc-row"><span class="sc-label">Source Code</span><span class="sc-value"><span style="color:var(--safe)">Not required</span></span></div></div><div class="card">
+  <div class="ca" style="background:var(--crit)"></div>
+  <div class="cl">Quantum Vulnerable</div>
+  <div class="cv" style="color:var(--crit)">37</div>
+  <div class="cs">Require PQC migration</div>
+</div><div class="card">
+  <div class="ca" style="background:var(--warn)"></div>
+  <div class="cl">Crypto Findings</div>
+  <div class="cv" style="color:var(--warn)">23</div>
+  <div class="cs">Engine A | 15 vulnerable</div>
+</div><div class="card">
+  <div class="ca" style="background:var(--med)"></div>
+  <div class="cl">Network Findings</div>
+  <div class="cv" style="color:var(--med)">25</div>
+  <div class="cs">Engine B | 22 vulnerable</div>
+</div></div><div class="exec-row-2">
+  <div class="pqc-card">
+    <div class="score-ring" style="border-color:#991b1b;color:#991b1b">0</div>
+    <div>
+      <div class="pqc-label">PQC Readiness Score</div>
+      <div class="pqc-title" style="color:#991b1b">Critical Risk</div>
+      <div class="pqc-statement">This system is actively using quantum-vulnerable cryptographic algorithms (DH, DSA, Dynamic-Test, ECDH...) and network protocols (SSH, TLS), detected at runtime via eBPF without requiring source code access. <strong>30 findings</strong> are high or critical severity and should be prioritized for PQC migration.</div>
+    </div>
+  </div>
+</div><div class="exec-row-3">
+  <div class="proc-card">
+  <div class="proc-hdr">
+    <div class="proc-hdr-left">
+      <span class="etag ea">Processes</span>
+      Runtime Process Tree
+      <span class="cc">1</span>
+    </div>
+    <div class="proc-sub">Monitored process hierarchy | fork/exec tracked | libraries per process</div>
+    
+  </div>
+  <div class="proc-body"><div class="proc-row">
+  <span class="proc-pid">PID 54678</span>
+  <span class="proc-name">laviq_signature</span>
+  <span class="proc-exe">/tmp/laviq_signature_matrix_c</span>
+  <span class="proc-disc disc-attached">attached</span>
+  <span class="proc-findings"><strong>48 findings</strong></span>
+  <div class="proc-libs"><span class="proc-lib dlopen crypto">laviq_signature_matrix.so (dlopen)</span><span class="proc-lib">ld-linux-aarch64.so.1</span><span class="proc-lib">libc.so.6</span></div>
+</div></div>
+  </div>
+</div><div class="cbom-card">
+  <div class="cbom-hdr">
+    <div class="cbom-hdr-left">
+      <span class="cbom-badge">CBOM</span>
+      Cryptographic Bill of Materials
+      <span class="cc">16</span>
+    </div>
+    <div class="cbom-sub">CycloneDX 1.6 | 11 vulnerable | 2 dormant | 3 PQC-safe</div>
+  </div>
+  <div class="cbom-note">
+    <strong>Status definitions:</strong> Active - detected in use during scan window.
+    Dormant - library loaded, no calls observed; may indicate deferred usage or short scan window.
+    Safe - PQC-compliant algorithm detected.
+  </div>
+  <div style="overflow-x:auto">
+    <table style="table-layout:fixed;width:100%;min-width:960px">
+      <colgroup>
+        <col style="width:140px"><col style="width:95px"><col style="width:85px">
+        <col style="width:100px"><col style="width:105px"><col style="width:130px">
+        <col style="width:90px"><col style="width:75px"><col style="width:80px"><col style="min-width:160px">
+      </colgroup>
+      <thead><tr>
+        <th>Algorithm / Protocol</th><th>Type</th><th>Status</th><th>Quantum Safe</th>
+        <th>NIST Status</th><th>Library</th><th>Parameters</th><th>Load Source</th><th>Detections</th><th>Action Required</th>
+      </tr></thead>
+      <tbody><tr class="section-divider-row"><td colspan="10"><div class="section-divider section-divider-vuln">Active Risk - observed during scan window</div></td></tr><tr class="fr" onclick="tog('cb-active-0')">
+  <td><span class="cbom-name">TLS 1.2</span></td>
+  <td><span class="cbom-type">Protocol</span></td>
+  <td><span class="status-tag status-active">Active</span></td>
+  <td><span class="qs-vuln">Vulnerable</span></td>
+  <td><span class="nist-tag nist-bad">TLS 1.3 + PQC hybrid</span></td>
+  <td class="mc">-</td>
+  <td class="mc">—</td>
+  <td><span class="load-tag">linked</span></td>
+  <td class="cnt">3</td>
+  <td class="rec-cell">Upgrade to TLS 1.3 with PQC hybrid key exchange (X25519Kyber768)</td>
+</tr>
+<tr class="dr" id="cb-active-0"><td colspan="10"><div class="dw">
+  <div class="dp"><div class="dpt">Details</div><div class="mr"><span class="mk">OID</span><span class="mc">-</span></div></div>
+  <div class="dp"><div class="dpt">Recommendation</div><p class="rt">Upgrade to TLS 1.3 with PQC hybrid key exchange (X25519Kyber768)</p></div>
+</div></td></tr><tr class="fr" onclick="tog('cb-active-1')">
+  <td><span class="cbom-name">RSA</span></td>
+  <td><span class="cbom-type">Asymmetric</span></td>
+  <td><span class="status-tag status-active">Active</span></td>
+  <td><span class="qs-vuln">Vulnerable</span></td>
+  <td><span class="nist-tag nist-bad">Migrate by 2030</span></td>
+  <td class="mc">laviq_signature_matrix.so</td>
+  <td class="mc">PKCS1v1.5</td>
+  <td><span class="load-tag">dlopen</span></td>
+  <td class="cnt">24</td>
+  <td class="rec-cell">RSA is vulnerable to quantum attacks via Shor&#39;s algorithm. Migrate to ML-KEM (Kyber) for k...</td>
+</tr>
+<tr class="dr" id="cb-active-1"><td colspan="10"><div class="dw">
+  <div class="dp"><div class="dpt">Details</div><div class="mr"><span class="mk">OID</span><span class="mc">1.2.840.113549.1.1.1</span></div></div>
+  <div class="dp"><div class="dpt">Recommendation</div><p class="rt">RSA is vulnerable to quantum attacks via Shor&#39;s algorithm. Migrate to ML-KEM (Kyber) for key exchange.</p></div>
+</div></td></tr><tr class="fr" onclick="tog('cb-active-2')">
+  <td><span class="cbom-name">SHA1</span></td>
+  <td><span class="cbom-type">Hash</span></td>
+  <td><span class="status-tag status-active">Active</span></td>
+  <td><span class="qs-vuln">Vulnerable</span></td>
+  <td><span class="nist-tag nist-bad">Deprecated (2030)</span></td>
+  <td class="mc">laviq_signature_matrix.so</td>
+  <td class="mc">—</td>
+  <td><span class="load-tag">dlopen</span></td>
+  <td class="cnt">24</td>
+  <td class="rec-cell">SHA-1 is deprecated due to collision attacks. Migrate to SHA-256 or higher.</td>
+</tr>
+<tr class="dr" id="cb-active-2"><td colspan="10"><div class="dw">
+  <div class="dp"><div class="dpt">Details</div><div class="mr"><span class="mk">OID</span><span class="mc">1.3.14.3.2.26</span></div></div>
+  <div class="dp"><div class="dpt">Recommendation</div><p class="rt">SHA-1 is deprecated due to collision attacks. Migrate to SHA-256 or higher.</p></div>
+</div></td></tr><tr class="fr" onclick="tog('cb-active-3')">
+  <td><span class="cbom-name">MD5</span></td>
+  <td><span class="cbom-type">Hash</span></td>
+  <td><span class="status-tag status-active">Active</span></td>
+  <td><span class="qs-vuln">Vulnerable</span></td>
+  <td><span class="nist-tag nist-bad">Prohibited</span></td>
+  <td class="mc">laviq_signature_matrix.so</td>
+  <td class="mc">—</td>
+  <td><span class="load-tag">dlopen</span></td>
+  <td class="cnt">6</td>
+  <td class="rec-cell">MD5 is cryptographically broken. Migrate to SHA-256 or SHA-3 for hashing.</td>
+</tr>
+<tr class="dr" id="cb-active-3"><td colspan="10"><div class="dw">
+  <div class="dp"><div class="dpt">Details</div><div class="mr"><span class="mk">OID</span><span class="mc">1.2.840.113549.2.5</span></div></div>
+  <div class="dp"><div class="dpt">Recommendation</div><p class="rt">MD5 is cryptographically broken. Migrate to SHA-256 or SHA-3 for hashing.</p></div>
+</div></td></tr><tr class="fr" onclick="tog('cb-active-4')">
+  <td><span class="cbom-name">ECDSA</span></td>
+  <td><span class="cbom-type">Signature</span></td>
+  <td><span class="status-tag status-active">Active</span></td>
+  <td><span class="qs-vuln">Vulnerable</span></td>
+  <td><span class="nist-tag nist-bad">Migrate by 2030</span></td>
+  <td class="mc">laviq_signature_matrix.so</td>
+  <td class="mc">P-256</td>
+  <td><span class="load-tag">dlopen</span></td>
+  <td class="cnt">12</td>
+  <td class="rec-cell">ECDSA is vulnerable to quantum attacks. Migrate to ML-DSA (Dilithium) for digital signatur...</td>
+</tr>
+<tr class="dr" id="cb-active-4"><td colspan="10"><div class="dw">
+  <div class="dp"><div class="dpt">Details</div><div class="mr"><span class="mk">OID</span><span class="mc">1.2.840.10045.4.3.2</span></div></div>
+  <div class="dp"><div class="dpt">Recommendation</div><p class="rt">ECDSA is vulnerable to quantum attacks. Migrate to ML-DSA (Dilithium) for digital signatures.</p></div>
+</div></td></tr><tr class="fr" onclick="tog('cb-active-5')">
+  <td><span class="cbom-name">SSH 2</span></td>
+  <td><span class="cbom-type">Protocol</span></td>
+  <td><span class="status-tag status-active">Active</span></td>
+  <td><span class="qs-vuln">Vulnerable</span></td>
+  <td><span class="nist-tag nist-bad">Migrate to PQC KEX</span></td>
+  <td class="mc">-</td>
+  <td class="mc">—</td>
+  <td><span class="load-tag">linked</span></td>
+  <td class="cnt">13</td>
+  <td class="rec-cell">SSH connections use quantum-vulnerable algorithms. Monitor for SSH PQC standards.</td>
+</tr>
+<tr class="dr" id="cb-active-5"><td colspan="10"><div class="dw">
+  <div class="dp"><div class="dpt">Details</div><div class="mr"><span class="mk">OID</span><span class="mc">-</span></div></div>
+  <div class="dp"><div class="dpt">Recommendation</div><p class="rt">SSH connections use quantum-vulnerable algorithms. Monitor for SSH PQC standards.</p></div>
+</div></td></tr><tr class="fr" onclick="tog('cb-active-6')">
+  <td><span class="cbom-name">TLS 1.3</span></td>
+  <td><span class="cbom-type">Protocol</span></td>
+  <td><span class="status-tag status-active">Active</span></td>
+  <td><span class="qs-vuln">Vulnerable</span></td>
+  <td><span class="nist-tag nist-bad">TLS 1.3 + PQC hybrid</span></td>
+  <td class="mc">-</td>
+  <td class="mc">—</td>
+  <td><span class="load-tag">linked</span></td>
+  <td class="cnt">9</td>
+  <td class="rec-cell">Upgrade to X25519Kyber768 hybrid for quantum resistance</td>
+</tr>
+<tr class="dr" id="cb-active-6"><td colspan="10"><div class="dw">
+  <div class="dp"><div class="dpt">Details</div><div class="mr"><span class="mk">OID</span><span class="mc">-</span></div></div>
+  <div class="dp"><div class="dpt">Recommendation</div><p class="rt">Upgrade to X25519Kyber768 hybrid for quantum resistance</p></div>
+</div></td></tr><tr class="fr" onclick="tog('cb-active-7')">
+  <td><span class="cbom-name">DSA</span></td>
+  <td><span class="cbom-type">Signature</span></td>
+  <td><span class="status-tag status-active">Active</span></td>
+  <td><span class="qs-vuln">Vulnerable</span></td>
+  <td><span class="nist-tag nist-bad">Migrate by 2030</span></td>
+  <td class="mc">laviq_signature_matrix.so</td>
+  <td class="mc">—</td>
+  <td><span class="load-tag">dlopen</span></td>
+  <td class="cnt">6</td>
+  <td class="rec-cell">DSA is quantum vulnerable. Migrate to ML-DSA (Dilithium).</td>
+</tr>
+<tr class="dr" id="cb-active-7"><td colspan="10"><div class="dw">
+  <div class="dp"><div class="dpt">Details</div><div class="mr"><span class="mk">OID</span><span class="mc">1.2.840.10040.4.1</span></div></div>
+  <div class="dp"><div class="dpt">Recommendation</div><p class="rt">DSA is quantum vulnerable. Migrate to ML-DSA (Dilithium).</p></div>
+</div></td></tr><tr class="fr" onclick="tog('cb-active-8')">
+  <td><span class="cbom-name">DH</span></td>
+  <td><span class="cbom-type">Key Exchange</span></td>
+  <td><span class="status-tag status-active">Active</span></td>
+  <td><span class="qs-vuln">Vulnerable</span></td>
+  <td><span class="nist-tag nist-bad">Migrate by 2030</span></td>
+  <td class="mc">laviq_signature_matrix.so</td>
+  <td class="mc">—</td>
+  <td><span class="load-tag">dlopen</span></td>
+  <td class="cnt">6</td>
+  <td class="rec-cell">Diffie-Hellman is quantum vulnerable. Migrate to ML-KEM (Kyber).</td>
+</tr>
+<tr class="dr" id="cb-active-8"><td colspan="10"><div class="dw">
+  <div class="dp"><div class="dpt">Details</div><div class="mr"><span class="mk">OID</span><span class="mc">1.2.840.113549.1.3.1</span></div></div>
+  <div class="dp"><div class="dpt">Recommendation</div><p class="rt">Diffie-Hellman is quantum vulnerable. Migrate to ML-KEM (Kyber).</p></div>
+</div></td></tr><tr class="fr" onclick="tog('cb-active-9')">
+  <td><span class="cbom-name">ECDH</span></td>
+  <td><span class="cbom-type">Key Exchange</span></td>
+  <td><span class="status-tag status-active">Active</span></td>
+  <td><span class="qs-vuln">Vulnerable</span></td>
+  <td><span class="nist-tag nist-bad">Migrate by 2030</span></td>
+  <td class="mc">laviq_signature_matrix.so</td>
+  <td class="mc">—</td>
+  <td><span class="load-tag">dlopen</span></td>
+  <td class="cnt">6</td>
+  <td class="rec-cell">ECDH (including X25519) is quantum vulnerable. Migrate to ML-KEM (Kyber).</td>
+</tr>
+<tr class="dr" id="cb-active-9"><td colspan="10"><div class="dw">
+  <div class="dp"><div class="dpt">Details</div><div class="mr"><span class="mk">OID</span><span class="mc">1.3.132.1.12</span></div></div>
+  <div class="dp"><div class="dpt">Recommendation</div><p class="rt">ECDH (including X25519) is quantum vulnerable. Migrate to ML-KEM (Kyber).</p></div>
+</div></td></tr><tr class="fr" onclick="tog('cb-active-10')">
+  <td><span class="cbom-name">Dynamic-Test</span></td>
+  <td><span class="cbom-type">Algorithm</span></td>
+  <td><span class="status-tag status-active">Active</span></td>
+  <td><span class="qs-vuln">Vulnerable</span></td>
+  <td><span class="nist-tag nist-bad">-</span></td>
+  <td class="mc">laviq_signature_matrix.so</td>
+  <td class="mc">—</td>
+  <td><span class="load-tag">dlopen</span></td>
+  <td class="cnt">6</td>
+  <td class="rec-cell">This is a test function for validating dynamic library detection in Phase 1.1.</td>
+</tr>
+<tr class="dr" id="cb-active-10"><td colspan="10"><div class="dw">
+  <div class="dp"><div class="dpt">Details</div><div class="mr"><span class="mk">OID</span><span class="mc">-</span></div></div>
+  <div class="dp"><div class="dpt">Recommendation</div><p class="rt">This is a test function for validating dynamic library detection in Phase 1.1.</p></div>
+</div></td></tr><tr class="section-divider-row"><td colspan="10"><div class="section-divider section-divider-dormant">Dormant Risk - loaded in memory, no activity observed during scan window <span class="dormant-hint">Extend scan duration or re-run under active workload to confirm</span></div></td></tr><tr class="fr" onclick="tog('cb-dormant-0')">
+  <td><span class="cbom-name">AES</span></td>
+  <td><span class="cbom-type">Symmetric</span></td>
+  <td><span class="status-tag status-dormant">Dormant</span></td>
+  <td><span class="qs-dormant">Unknown</span></td>
+  <td><span class="nist-tag nist-ok">Approved (AES-256)</span></td>
+  <td class="mc">laviq_signature_matrix.so</td>
+  <td class="mc">128-bit</td>
+  <td><span class="load-tag">dlopen</span></td>
+  <td class="cnt">24</td>
+  <td class="rec-cell">AES-128 has effective 64-bit security against Grover&#39;s algorithm. Upgrade to AES-256 for q...</td>
+</tr>
+<tr class="dr" id="cb-dormant-0"><td colspan="10"><div class="dw">
+  <div class="dp"><div class="dpt">Details</div><div class="mr"><span class="mk">OID</span><span class="mc">2.16.840.1.101.3.4.1</span></div></div>
+  <div class="dp"><div class="dpt">Recommendation</div><p class="rt">AES-128 has effective 64-bit security against Grover&#39;s algorithm. Upgrade to AES-256 for quantum-safe symmetric encryption.</p></div>
+</div></td></tr><tr class="fr" onclick="tog('cb-dormant-1')">
+  <td><span class="cbom-name">SHA-256/SHA-512</span></td>
+  <td><span class="cbom-type">Hash</span></td>
+  <td><span class="status-tag status-dormant">Dormant</span></td>
+  <td><span class="qs-dormant">Unknown</span></td>
+  <td><span class="nist-tag nist-ok">Approved</span></td>
+  <td class="mc">laviq_signature_matrix.so</td>
+  <td class="mc">—</td>
+  <td><span class="load-tag">dlopen</span></td>
+  <td class="cnt">6</td>
+  <td class="rec-cell">SHA-2 family is quantum-resistant for hashing. Continue use.</td>
+</tr>
+<tr class="dr" id="cb-dormant-1"><td colspan="10"><div class="dw">
+  <div class="dp"><div class="dpt">Details</div><div class="mr"><span class="mk">OID</span><span class="mc">2.16.840.1.101.3.4.2.1</span></div></div>
+  <div class="dp"><div class="dpt">Recommendation</div><p class="rt">SHA-2 family is quantum-resistant for hashing. Continue use.</p></div>
+</div></td></tr><tr class="section-divider-row"><td colspan="10"><div class="section-divider section-divider-safe">PQC Safe - quantum-resistant algorithms in active use</div></td></tr><tr class="fr" onclick="tog('cb-safe-0')">
+  <td><span class="cbom-name">SLH-DSA</span></td>
+  <td><span class="cbom-type">PQC Signature</span></td>
+  <td><span class="status-tag status-safe">Safe</span></td>
+  <td><span class="qs-safe">Safe</span></td>
+  <td><span class="nist-tag nist-ok">FIPS 205</span></td>
+  <td class="mc">laviq_signature_matrix.so</td>
+  <td class="mc">—</td>
+  <td><span class="load-tag">dlopen</span></td>
+  <td class="cnt">6</td>
+  <td class="rec-cell">SLH-DSA (SPHINCS+) is NIST-approved PQC. Compliant with FIPS 205.</td>
+</tr>
+<tr class="dr" id="cb-safe-0"><td colspan="10"><div class="dw">
+  <div class="dp"><div class="dpt">Details</div><div class="mr"><span class="mk">OID</span><span class="mc">2.16.840.1.101.3.4.3.20</span></div></div>
+  <div class="dp"><div class="dpt">Recommendation</div><p class="rt">SLH-DSA (SPHINCS+) is NIST-approved PQC. Compliant with FIPS 205.</p></div>
+</div></td></tr><tr class="fr" onclick="tog('cb-safe-1')">
+  <td><span class="cbom-name">ML-KEM</span></td>
+  <td><span class="cbom-type">PQC KEM</span></td>
+  <td><span class="status-tag status-safe">Safe</span></td>
+  <td><span class="qs-safe">Safe</span></td>
+  <td><span class="nist-tag nist-ok">FIPS 203</span></td>
+  <td class="mc">laviq_signature_matrix.so</td>
+  <td class="mc">—</td>
+  <td><span class="load-tag">dlopen</span></td>
+  <td class="cnt">6</td>
+  <td class="rec-cell">ML-KEM (Kyber) is NIST-approved PQC. Compliant with FIPS 203.</td>
+</tr>
+<tr class="dr" id="cb-safe-1"><td colspan="10"><div class="dw">
+  <div class="dp"><div class="dpt">Details</div><div class="mr"><span class="mk">OID</span><span class="mc">2.16.840.1.101.3.4.4.1</span></div></div>
+  <div class="dp"><div class="dpt">Recommendation</div><p class="rt">ML-KEM (Kyber) is NIST-approved PQC. Compliant with FIPS 203.</p></div>
+</div></td></tr><tr class="fr" onclick="tog('cb-safe-2')">
+  <td><span class="cbom-name">ML-DSA</span></td>
+  <td><span class="cbom-type">PQC Signature</span></td>
+  <td><span class="status-tag status-safe">Safe</span></td>
+  <td><span class="qs-safe">Safe</span></td>
+  <td><span class="nist-tag nist-ok">FIPS 204</span></td>
+  <td class="mc">laviq_signature_matrix.so</td>
+  <td class="mc">—</td>
+  <td><span class="load-tag">dlopen</span></td>
+  <td class="cnt">6</td>
+  <td class="rec-cell">ML-DSA (Dilithium) is NIST-approved PQC. Compliant with FIPS 204.</td>
+</tr>
+<tr class="dr" id="cb-safe-2"><td colspan="10"><div class="dw">
+  <div class="dp"><div class="dpt">Details</div><div class="mr"><span class="mk">OID</span><span class="mc">2.16.840.1.101.3.4.3.17</span></div></div>
+  <div class="dp"><div class="dpt">Recommendation</div><p class="rt">ML-DSA (Dilithium) is NIST-approved PQC. Compliant with FIPS 204.</p></div>
+</div></td></tr></tbody>
+    </table>
+  </div>
+</div></div>
+<div class="panel" id="panel-crypto"><div class="section">
+  <div class="sh">
+    <div class="st"><span class="etag ea">Engine A</span>Cryptographic Primitives<span class="cc">23</span></div>
+    <div class="ss">15 quantum-vulnerable | 8 PQC-safe</div>
+  </div>
+  <table>
+    <thead><tr><th>Process</th><th>PID</th><th>Algorithm</th><th>Risk</th><th>Symbol</th><th>Calls</th><th>Severity</th><th></th></tr></thead>
+    <tbody><tr class="fr" onclick="tog('c0')">
+  <td class="mc">laviq_signature</td>
+  <td class="mc pid-cell">54678</td>
+  <td><div class="algo-name">MD5</div></td>
+  <td><span class="pill pill-v"><svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3.5" fill="#dc2626"/></svg>Vulnerable</span></td>
+  <td class="mc">MD5_Init</td>
+  <td class="cnt">6x</td>
+  <td><span class="badge sev-high">HIGH</span></td>
+  <td class="dtog"><span class="tbtn">Details</span></td>
+</tr><tr class="dr" id="c0"><td colspan="7"><div class="dw"><div class="dp"><div class="dpt">Remediation</div>
+<p class="rt">MD5 is cryptographically broken. Migrate to SHA-256 or SHA-3 for hashing.</p>
+<div class="mr"><span class="mk">Library</span><span class="mc">laviq_signature_matrix.so</span></div>
+<div class="mr"><span class="mk">Load Source</span><span class="load-tag">dlopen</span></div>
+</div><div class="dp"><div class="dpt">eBPF Stack Trace</div><div class="sb"><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">main()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__libc_init_first()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__libc_start_main()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">_start()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div></div></div></div></td></tr><tr class="fr" onclick="tog('c1')">
+  <td class="mc">laviq_signature</td>
+  <td class="mc pid-cell">54678</td>
+  <td><div class="algo-name">SHA1</div></td>
+  <td><span class="pill pill-v"><svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3.5" fill="#dc2626"/></svg>Vulnerable</span></td>
+  <td class="mc">SHA1_Init</td>
+  <td class="cnt">6x</td>
+  <td><span class="badge sev-high">HIGH</span></td>
+  <td class="dtog"><span class="tbtn">Details</span></td>
+</tr><tr class="dr" id="c1"><td colspan="7"><div class="dw"><div class="dp"><div class="dpt">Remediation</div>
+<p class="rt">SHA-1 is deprecated due to collision attacks. Migrate to SHA-256 or higher.</p>
+<div class="mr"><span class="mk">Library</span><span class="mc">laviq_signature_matrix.so</span></div>
+<div class="mr"><span class="mk">Load Source</span><span class="load-tag">dlopen</span></div>
+</div><div class="dp"><div class="dpt">eBPF Stack Trace</div><div class="sb"><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">main()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__libc_init_first()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__libc_start_main()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">_start()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div></div></div></div></td></tr><tr class="fr" onclick="tog('c2')">
+  <td class="mc">laviq_signature</td>
+  <td class="mc pid-cell">54678</td>
+  <td><div class="algo-name">SHA1</div></td>
+  <td><span class="pill pill-v"><svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3.5" fill="#dc2626"/></svg>Vulnerable</span></td>
+  <td class="mc">SHA1_Update</td>
+  <td class="cnt">6x</td>
+  <td><span class="badge sev-high">HIGH</span></td>
+  <td class="dtog"><span class="tbtn">Details</span></td>
+</tr><tr class="dr" id="c2"><td colspan="7"><div class="dw"><div class="dp"><div class="dpt">Remediation</div>
+<p class="rt">SHA-1 is deprecated due to collision attacks. Migrate to SHA-256 or higher.</p>
+<div class="mr"><span class="mk">Library</span><span class="mc">laviq_signature_matrix.so</span></div>
+<div class="mr"><span class="mk">Load Source</span><span class="load-tag">dlopen</span></div>
+</div><div class="dp"><div class="dpt">eBPF Stack Trace</div><div class="sb"><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">main()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__libc_init_first()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__libc_start_main()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">_start()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div></div></div></div></td></tr><tr class="fr" onclick="tog('c3')">
+  <td class="mc">laviq_signature</td>
+  <td class="mc pid-cell">54678</td>
+  <td><div class="algo-name">SHA1</div></td>
+  <td><span class="pill pill-v"><svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3.5" fill="#dc2626"/></svg>Vulnerable</span></td>
+  <td class="mc">SHA1_Final</td>
+  <td class="cnt">6x</td>
+  <td><span class="badge sev-high">HIGH</span></td>
+  <td class="dtog"><span class="tbtn">Details</span></td>
+</tr><tr class="dr" id="c3"><td colspan="7"><div class="dw"><div class="dp"><div class="dpt">Remediation</div>
+<p class="rt">SHA-1 is deprecated due to collision attacks. Migrate to SHA-256 or higher.</p>
+<div class="mr"><span class="mk">Library</span><span class="mc">laviq_signature_matrix.so</span></div>
+<div class="mr"><span class="mk">Load Source</span><span class="load-tag">dlopen</span></div>
+</div><div class="dp"><div class="dpt">eBPF Stack Trace</div><div class="sb"><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">main()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__libc_init_first()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__libc_start_main()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">_start()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div></div></div></div></td></tr><tr class="fr" onclick="tog('c4')">
+  <td class="mc">laviq_signature</td>
+  <td class="mc pid-cell">54678</td>
+  <td><div class="algo-name">SHA1</div></td>
+  <td><span class="pill pill-v"><svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3.5" fill="#dc2626"/></svg>Vulnerable</span></td>
+  <td class="mc">sha1_pattern_example</td>
+  <td class="cnt">6x</td>
+  <td><span class="badge sev-high">HIGH</span></td>
+  <td class="dtog"><span class="tbtn">Details</span></td>
+</tr><tr class="dr" id="c4"><td colspan="7"><div class="dw"><div class="dp"><div class="dpt">Remediation</div>
+<p class="rt">SHA-1 is deprecated due to collision attacks. Migrate to SHA-256 or higher.</p>
+<div class="mr"><span class="mk">Library</span><span class="mc">laviq_signature_matrix.so</span></div>
+<div class="mr"><span class="mk">Load Source</span><span class="load-tag">dlopen</span></div>
+</div><div class="dp"><div class="dpt">eBPF Stack Trace</div><div class="sb"><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">sha1_pattern_example()</span><span class="sfl">/tmp/laviq_signature_matrix.so</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">main()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__libc_init_first()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__libc_start_main()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">_start()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div></div></div></div></td></tr><tr class="fr" onclick="tog('c5')">
+  <td class="mc">laviq_signature</td>
+  <td class="mc pid-cell">54678</td>
+  <td><div class="algo-name">RSA</div></td>
+  <td><span class="pill pill-v"><svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3.5" fill="#dc2626"/></svg>Vulnerable</span></td>
+  <td class="mc">RSA_new</td>
+  <td class="cnt">6x</td>
+  <td><span class="badge sev-high">HIGH</span></td>
+  <td class="dtog"><span class="tbtn">Details</span></td>
+</tr><tr class="dr" id="c5"><td colspan="7"><div class="dw"><div class="dp"><div class="dpt">Remediation</div>
+<p class="rt">RSA is vulnerable to quantum attacks via Shor&#39;s algorithm. Migrate to ML-KEM (Kyber) for key exchange.</p>
+<div class="mr"><span class="mk">Library</span><span class="mc">laviq_signature_matrix.so</span></div>
+<div class="mr"><span class="mk">Load Source</span><span class="load-tag">dlopen</span></div>
+</div><div class="dp"><div class="dpt">eBPF Stack Trace</div><div class="sb"><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">sha1_pattern_example()</span><span class="sfl">/tmp/laviq_signature_matrix.so</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">main()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__libc_init_first()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__libc_start_main()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">_start()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div></div></div></div></td></tr><tr class="fr" onclick="tog('c6')">
+  <td class="mc">laviq_signature</td>
+  <td class="mc pid-cell">54678</td>
+  <td><div class="algo-name">RSA</div></td>
+  <td><span class="pill pill-v"><svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3.5" fill="#dc2626"/></svg>Vulnerable</span></td>
+  <td class="mc">RSA_sign</td>
+  <td class="cnt">6x</td>
+  <td><span class="badge sev-high">HIGH</span></td>
+  <td class="dtog"><span class="tbtn">Details</span></td>
+</tr><tr class="dr" id="c6"><td colspan="7"><div class="dw"><div class="dp"><div class="dpt">Remediation</div>
+<p class="rt">RSA is vulnerable to quantum attacks via Shor&#39;s algorithm. Migrate to ML-KEM (Kyber) for key exchange.</p>
+<div class="mr"><span class="mk">Library</span><span class="mc">laviq_signature_matrix.so</span></div>
+<div class="mr"><span class="mk">Load Source</span><span class="load-tag">dlopen</span></div>
+</div><div class="dp"><div class="dpt">eBPF Stack Trace</div><div class="sb"><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">RSA_sign()</span><span class="sfl">/tmp/laviq_signature_matrix.so</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">main()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__libc_init_first()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__libc_start_main()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">_start()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div></div></div></div></td></tr><tr class="fr" onclick="tog('c7')">
+  <td class="mc">laviq_signature</td>
+  <td class="mc pid-cell">54678</td>
+  <td><div class="algo-name">RSA</div></td>
+  <td><span class="pill pill-v"><svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3.5" fill="#dc2626"/></svg>Vulnerable</span></td>
+  <td class="mc">RSA_public_encrypt</td>
+  <td class="cnt">6x</td>
+  <td><span class="badge sev-high">HIGH</span></td>
+  <td class="dtog"><span class="tbtn">Details</span></td>
+</tr><tr class="dr" id="c7"><td colspan="7"><div class="dw"><div class="dp"><div class="dpt">Remediation</div>
+<p class="rt">RSA with PKCS1v1.5 padding is quantum-vulnerable via Shor&#39;s algorithm. PKCS1v1.5 is additionally vulnerable to padding oracle attacks. Migrate to ML-KEM (Kyber) for key exchange.</p>
+<div class="mr"><span class="mk">Library</span><span class="mc">laviq_signature_matrix.so</span></div>
+<div class="mr"><span class="mk">Load Source</span><span class="load-tag">dlopen</span></div>
+<div class="mr"><span class="mk">Padding</span><span class="mc">PKCS1v1.5 (1)</span></div></div><div class="dp"><div class="dpt">eBPF Stack Trace</div><div class="sb"><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">RSA_sign()</span><span class="sfl">/tmp/laviq_signature_matrix.so</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">main()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__libc_init_first()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__libc_start_main()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">_start()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div></div></div></div></td></tr><tr class="fr" onclick="tog('c8')">
+  <td class="mc">laviq_signature</td>
+  <td class="mc pid-cell">54678</td>
+  <td><div class="algo-name">RSA</div></td>
+  <td><span class="pill pill-v"><svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3.5" fill="#dc2626"/></svg>Vulnerable</span></td>
+  <td class="mc">rsa_keygen</td>
+  <td class="cnt">6x</td>
+  <td><span class="badge sev-high">HIGH</span></td>
+  <td class="dtog"><span class="tbtn">Details</span></td>
+</tr><tr class="dr" id="c8"><td colspan="7"><div class="dw"><div class="dp"><div class="dpt">Remediation</div>
+<p class="rt">RSA is vulnerable to quantum attacks via Shor&#39;s algorithm. Migrate to ML-KEM (Kyber) for key exchange.</p>
+<div class="mr"><span class="mk">Library</span><span class="mc">laviq_signature_matrix.so</span></div>
+<div class="mr"><span class="mk">Load Source</span><span class="load-tag">dlopen</span></div>
+</div><div class="dp"><div class="dpt">eBPF Stack Trace</div><div class="sb"><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">rsa_keygen()</span><span class="sfl">/tmp/laviq_signature_matrix.so</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">main()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__libc_init_first()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__libc_start_main()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">_start()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div></div></div></div></td></tr><tr class="fr" onclick="tog('c9')">
+  <td class="mc">laviq_signature</td>
+  <td class="mc pid-cell">54678</td>
+  <td><div class="algo-name">ECDSA</div></td>
+  <td><span class="pill pill-v"><svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3.5" fill="#dc2626"/></svg>Vulnerable</span></td>
+  <td class="mc">ECDSA_sign</td>
+  <td class="cnt">6x</td>
+  <td><span class="badge sev-high">HIGH</span></td>
+  <td class="dtog"><span class="tbtn">Details</span></td>
+</tr><tr class="dr" id="c9"><td colspan="7"><div class="dw"><div class="dp"><div class="dpt">Remediation</div>
+<p class="rt">ECDSA is vulnerable to quantum attacks. Migrate to ML-DSA (Dilithium) for digital signatures.</p>
+<div class="mr"><span class="mk">Library</span><span class="mc">laviq_signature_matrix.so</span></div>
+<div class="mr"><span class="mk">Load Source</span><span class="load-tag">dlopen</span></div>
+</div><div class="dp"><div class="dpt">eBPF Stack Trace</div><div class="sb"><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">ECDSA_sign()</span><span class="sfl">/tmp/laviq_signature_matrix.so</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">main()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__libc_init_first()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__libc_start_main()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">_start()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div></div></div></div></td></tr><tr class="fr" onclick="tog('c10')">
+  <td class="mc">laviq_signature</td>
+  <td class="mc pid-cell">54678</td>
+  <td><div class="algo-name">ECDSA</div></td>
+  <td><span class="pill pill-v"><svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3.5" fill="#dc2626"/></svg>Vulnerable</span></td>
+  <td class="mc">EC_KEY_new_by_curve_name</td>
+  <td class="cnt">6x</td>
+  <td><span class="badge sev-high">HIGH</span></td>
+  <td class="dtog"><span class="tbtn">Details</span></td>
+</tr><tr class="dr" id="c10"><td colspan="7"><div class="dw"><div class="dp"><div class="dpt">Remediation</div>
+<p class="rt">P-256 is quantum-vulnerable via Shor&#39;s algorithm. Migrate to ML-DSA (Dilithium) for signatures or ML-KEM (Kyber) for key exchange.</p>
+<div class="mr"><span class="mk">Library</span><span class="mc">laviq_signature_matrix.so</span></div>
+<div class="mr"><span class="mk">Load Source</span><span class="load-tag">dlopen</span></div>
+<div class="mr"><span class="mk">Curve</span><span class="mc">P-256 (NID 415)</span></div></div><div class="dp"><div class="dpt">eBPF Stack Trace</div><div class="sb"><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">EC_KEY_new_by_curve_name()</span><span class="sfl">/tmp/laviq_signature_matrix.so</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">main()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__libc_init_first()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__libc_start_main()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">_start()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div></div></div></div></td></tr><tr class="fr" onclick="tog('c11')">
+  <td class="mc">laviq_signature</td>
+  <td class="mc pid-cell">54678</td>
+  <td><div class="algo-name">ECDH</div></td>
+  <td><span class="pill pill-v"><svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3.5" fill="#dc2626"/></svg>Vulnerable</span></td>
+  <td class="mc">ECDH_compute_key</td>
+  <td class="cnt">6x</td>
+  <td><span class="badge sev-medium">MEDIUM</span></td>
+  <td class="dtog"><span class="tbtn">Details</span></td>
+</tr><tr class="dr" id="c11"><td colspan="7"><div class="dw"><div class="dp"><div class="dpt">Remediation</div>
+<p class="rt">ECDH (including X25519) is quantum vulnerable. Migrate to ML-KEM (Kyber).</p>
+<div class="mr"><span class="mk">Library</span><span class="mc">laviq_signature_matrix.so</span></div>
+<div class="mr"><span class="mk">Load Source</span><span class="load-tag">dlopen</span></div>
+</div><div class="dp"><div class="dpt">eBPF Stack Trace</div><div class="sb"><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">EC_KEY_new_by_curve_name()</span><span class="sfl">/tmp/laviq_signature_matrix.so</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">main()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__libc_init_first()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__libc_start_main()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">_start()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div></div></div></div></td></tr><tr class="fr" onclick="tog('c12')">
+  <td class="mc">laviq_signature</td>
+  <td class="mc pid-cell">54678</td>
+  <td><div class="algo-name">DH</div></td>
+  <td><span class="pill pill-v"><svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3.5" fill="#dc2626"/></svg>Vulnerable</span></td>
+  <td class="mc">DH_new</td>
+  <td class="cnt">6x</td>
+  <td><span class="badge sev-medium">MEDIUM</span></td>
+  <td class="dtog"><span class="tbtn">Details</span></td>
+</tr><tr class="dr" id="c12"><td colspan="7"><div class="dw"><div class="dp"><div class="dpt">Remediation</div>
+<p class="rt">Diffie-Hellman is quantum vulnerable. Migrate to ML-KEM (Kyber).</p>
+<div class="mr"><span class="mk">Library</span><span class="mc">laviq_signature_matrix.so</span></div>
+<div class="mr"><span class="mk">Load Source</span><span class="load-tag">dlopen</span></div>
+</div><div class="dp"><div class="dpt">eBPF Stack Trace</div><div class="sb"><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">DH_new()</span><span class="sfl">/tmp/laviq_signature_matrix.so</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">main()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__libc_init_first()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__libc_start_main()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">_start()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div></div></div></div></td></tr><tr class="fr" onclick="tog('c13')">
+  <td class="mc">laviq_signature</td>
+  <td class="mc pid-cell">54678</td>
+  <td><div class="algo-name">DSA</div></td>
+  <td><span class="pill pill-v"><svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3.5" fill="#dc2626"/></svg>Vulnerable</span></td>
+  <td class="mc">DSA_sign</td>
+  <td class="cnt">6x</td>
+  <td><span class="badge sev-medium">MEDIUM</span></td>
+  <td class="dtog"><span class="tbtn">Details</span></td>
+</tr><tr class="dr" id="c13"><td colspan="7"><div class="dw"><div class="dp"><div class="dpt">Remediation</div>
+<p class="rt">DSA is quantum vulnerable. Migrate to ML-DSA (Dilithium).</p>
+<div class="mr"><span class="mk">Library</span><span class="mc">laviq_signature_matrix.so</span></div>
+<div class="mr"><span class="mk">Load Source</span><span class="load-tag">dlopen</span></div>
+</div><div class="dp"><div class="dpt">eBPF Stack Trace</div><div class="sb"><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">DH_new()</span><span class="sfl">/tmp/laviq_signature_matrix.so</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">main()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__libc_init_first()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__libc_start_main()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">_start()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div></div></div></div></td></tr><tr class="fr" onclick="tog('c14')">
+  <td class="mc">laviq_signature</td>
+  <td class="mc pid-cell">54678</td>
+  <td><div class="algo-name">AES</div></td>
+  <td><span class="pill pill-s"><svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3.5" fill="#059669"/></svg>Safe</span></td>
+  <td class="mc">AES_set_encrypt_key</td>
+  <td class="cnt">6x</td>
+  <td><span class="badge sev-medium">MEDIUM</span></td>
+  <td class="dtog"><span class="tbtn">Details</span></td>
+</tr><tr class="dr" id="c14"><td colspan="7"><div class="dw"><div class="dp"><div class="dpt">Remediation</div>
+<p class="rt">AES-128 has effective 64-bit security against Grover&#39;s algorithm. Upgrade to AES-256 for quantum-safe symmetric encryption.</p>
+<div class="mr"><span class="mk">Library</span><span class="mc">laviq_signature_matrix.so</span></div>
+<div class="mr"><span class="mk">Load Source</span><span class="load-tag">dlopen</span></div>
+<div class="mr"><span class="mk">Key Size</span><span class="mc">128-bit</span></div></div><div class="dp"><div class="dpt">eBPF Stack Trace</div><div class="sb"><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">AES_set_encrypt_key()</span><span class="sfl">/tmp/laviq_signature_matrix.so</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">main()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__libc_init_first()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__libc_start_main()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">_start()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div></div></div></div></td></tr><tr class="fr" onclick="tog('c15')">
+  <td class="mc">laviq_signature</td>
+  <td class="mc pid-cell">54678</td>
+  <td><div class="algo-name">Dynamic-Test</div></td>
+  <td><span class="pill pill-v"><svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3.5" fill="#dc2626"/></svg>Vulnerable</span></td>
+  <td class="mc">dyn_func</td>
+  <td class="cnt">6x</td>
+  <td><span class="badge sev-medium">MEDIUM</span></td>
+  <td class="dtog"><span class="tbtn">Details</span></td>
+</tr><tr class="dr" id="c15"><td colspan="7"><div class="dw"><div class="dp"><div class="dpt">Remediation</div>
+<p class="rt">This is a test function for validating dynamic library detection in Phase 1.1.</p>
+<div class="mr"><span class="mk">Library</span><span class="mc">laviq_signature_matrix.so</span></div>
+<div class="mr"><span class="mk">Load Source</span><span class="load-tag">dlopen</span></div>
+</div><div class="dp"><div class="dpt">eBPF Stack Trace</div><div class="sb"><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">dyn_func()</span><span class="sfl">/tmp/laviq_signature_matrix.so</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">main()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__libc_init_first()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__libc_start_main()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">_start()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div></div></div></div></td></tr><tr class="fr" onclick="tog('c16')">
+  <td class="mc">laviq_signature</td>
+  <td class="mc pid-cell">54678</td>
+  <td><div class="algo-name">AES</div></td>
+  <td><span class="pill pill-s"><svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3.5" fill="#059669"/></svg>Safe</span></td>
+  <td class="mc">AES_encrypt</td>
+  <td class="cnt">6x</td>
+  <td><span class="badge sev-low">LOW</span></td>
+  <td class="dtog"><span class="tbtn">Details</span></td>
+</tr><tr class="dr" id="c16"><td colspan="7"><div class="dw"><div class="dp"><div class="dpt">Remediation</div>
+<p class="rt">AES-256 is considered quantum-safe. Ensure you&#39;re using AES-256, not AES-128.</p>
+<div class="mr"><span class="mk">Library</span><span class="mc">laviq_signature_matrix.so</span></div>
+<div class="mr"><span class="mk">Load Source</span><span class="load-tag">dlopen</span></div>
+</div><div class="dp"><div class="dpt">eBPF Stack Trace</div><div class="sb"><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">DSA_sign()</span><span class="sfl">/tmp/laviq_signature_matrix.so</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">main()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__libc_init_first()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__libc_start_main()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">_start()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div></div></div></div></td></tr><tr class="fr" onclick="tog('c17')">
+  <td class="mc">laviq_signature</td>
+  <td class="mc pid-cell">54678</td>
+  <td><div class="algo-name">AES</div></td>
+  <td><span class="pill pill-s"><svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3.5" fill="#059669"/></svg>Safe</span></td>
+  <td class="mc">AES_decrypt</td>
+  <td class="cnt">6x</td>
+  <td><span class="badge sev-low">LOW</span></td>
+  <td class="dtog"><span class="tbtn">Details</span></td>
+</tr><tr class="dr" id="c17"><td colspan="7"><div class="dw"><div class="dp"><div class="dpt">Remediation</div>
+<p class="rt">AES-256 is considered quantum-safe. Ensure you&#39;re using AES-256, not AES-128.</p>
+<div class="mr"><span class="mk">Library</span><span class="mc">laviq_signature_matrix.so</span></div>
+<div class="mr"><span class="mk">Load Source</span><span class="load-tag">dlopen</span></div>
+</div><div class="dp"><div class="dpt">eBPF Stack Trace</div><div class="sb"><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">AES_encrypt()</span><span class="sfl">/tmp/laviq_signature_matrix.so</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">main()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__libc_init_first()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__libc_start_main()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">_start()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div></div></div></div></td></tr><tr class="fr" onclick="tog('c18')">
+  <td class="mc">laviq_signature</td>
+  <td class="mc pid-cell">54678</td>
+  <td><div class="algo-name">AES</div></td>
+  <td><span class="pill pill-s"><svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3.5" fill="#059669"/></svg>Safe</span></td>
+  <td class="mc">EVP_aes_256_gcm</td>
+  <td class="cnt">6x</td>
+  <td><span class="badge sev-low">LOW</span></td>
+  <td class="dtog"><span class="tbtn">Details</span></td>
+</tr><tr class="dr" id="c18"><td colspan="7"><div class="dw"><div class="dp"><div class="dpt">Remediation</div>
+<p class="rt">AES-256 is considered quantum-safe. Ensure you&#39;re using AES-256, not AES-128.</p>
+<div class="mr"><span class="mk">Library</span><span class="mc">laviq_signature_matrix.so</span></div>
+<div class="mr"><span class="mk">Load Source</span><span class="load-tag">dlopen</span></div>
+</div><div class="dp"><div class="dpt">eBPF Stack Trace</div><div class="sb"><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">AES_set_encrypt_key()</span><span class="sfl">/tmp/laviq_signature_matrix.so</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">main()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__libc_init_first()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__libc_start_main()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">_start()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div></div></div></div></td></tr><tr class="fr" onclick="tog('c19')">
+  <td class="mc">laviq_signature</td>
+  <td class="mc pid-cell">54678</td>
+  <td><div class="algo-name">SHA-256/SHA-512</div></td>
+  <td><span class="pill pill-s"><svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3.5" fill="#059669"/></svg>Safe</span></td>
+  <td class="mc">SHA256_Init</td>
+  <td class="cnt">6x</td>
+  <td><span class="badge sev-info">INFO</span></td>
+  <td class="dtog"><span class="tbtn">Details</span></td>
+</tr><tr class="dr" id="c19"><td colspan="7"><div class="dw"><div class="dp"><div class="dpt">Remediation</div>
+<p class="rt">SHA-2 family is quantum-resistant for hashing. Continue use.</p>
+<div class="mr"><span class="mk">Library</span><span class="mc">laviq_signature_matrix.so</span></div>
+<div class="mr"><span class="mk">Load Source</span><span class="load-tag">dlopen</span></div>
+</div><div class="dp"><div class="dpt">eBPF Stack Trace</div><div class="sb"><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">SHA256_Init()</span><span class="sfl">/tmp/laviq_signature_matrix.so</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">main()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__libc_init_first()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__libc_start_main()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">_start()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div></div></div></div></td></tr><tr class="fr" onclick="tog('c20')">
+  <td class="mc">laviq_signature</td>
+  <td class="mc pid-cell">54678</td>
+  <td><div class="algo-name">ML-KEM</div></td>
+  <td><span class="pill pill-s"><svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3.5" fill="#059669"/></svg>Safe</span></td>
+  <td class="mc">kyber_keygen</td>
+  <td class="cnt">6x</td>
+  <td><span class="badge sev-safe">PQC READY</span></td>
+  <td class="dtog"><span class="tbtn">Details</span></td>
+</tr><tr class="dr" id="c20"><td colspan="7"><div class="dw"><div class="dp"><div class="dpt">Remediation</div>
+<p class="rt">ML-KEM (Kyber) is NIST-approved PQC. Compliant with FIPS 203.</p>
+<div class="mr"><span class="mk">Library</span><span class="mc">laviq_signature_matrix.so</span></div>
+<div class="mr"><span class="mk">Load Source</span><span class="load-tag">dlopen</span></div>
+</div><div class="dp"><div class="dpt">eBPF Stack Trace</div><div class="sb"><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">kyber_keygen()</span><span class="sfl">/tmp/laviq_signature_matrix.so</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">main()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__libc_init_first()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__libc_start_main()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">_start()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div></div></div></div></td></tr><tr class="fr" onclick="tog('c21')">
+  <td class="mc">laviq_signature</td>
+  <td class="mc pid-cell">54678</td>
+  <td><div class="algo-name">ML-DSA</div></td>
+  <td><span class="pill pill-s"><svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3.5" fill="#059669"/></svg>Safe</span></td>
+  <td class="mc">dilithium_sign</td>
+  <td class="cnt">6x</td>
+  <td><span class="badge sev-safe">PQC READY</span></td>
+  <td class="dtog"><span class="tbtn">Details</span></td>
+</tr><tr class="dr" id="c21"><td colspan="7"><div class="dw"><div class="dp"><div class="dpt">Remediation</div>
+<p class="rt">ML-DSA (Dilithium) is NIST-approved PQC. Compliant with FIPS 204.</p>
+<div class="mr"><span class="mk">Library</span><span class="mc">laviq_signature_matrix.so</span></div>
+<div class="mr"><span class="mk">Load Source</span><span class="load-tag">dlopen</span></div>
+</div><div class="dp"><div class="dpt">eBPF Stack Trace</div><div class="sb"><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">kyber_keygen()</span><span class="sfl">/tmp/laviq_signature_matrix.so</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">main()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__libc_init_first()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__libc_start_main()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">_start()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div></div></div></div></td></tr><tr class="fr" onclick="tog('c22')">
+  <td class="mc">laviq_signature</td>
+  <td class="mc pid-cell">54678</td>
+  <td><div class="algo-name">SLH-DSA</div></td>
+  <td><span class="pill pill-s"><svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3.5" fill="#059669"/></svg>Safe</span></td>
+  <td class="mc">sphincs_sign</td>
+  <td class="cnt">6x</td>
+  <td><span class="badge sev-safe">PQC READY</span></td>
+  <td class="dtog"><span class="tbtn">Details</span></td>
+</tr><tr class="dr" id="c22"><td colspan="7"><div class="dw"><div class="dp"><div class="dpt">Remediation</div>
+<p class="rt">SLH-DSA (SPHINCS+) is NIST-approved PQC. Compliant with FIPS 205.</p>
+<div class="mr"><span class="mk">Library</span><span class="mc">laviq_signature_matrix.so</span></div>
+<div class="mr"><span class="mk">Load Source</span><span class="load-tag">dlopen</span></div>
+</div><div class="dp"><div class="dpt">eBPF Stack Trace</div><div class="sb"><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">dilithium_sign()</span><span class="sfl">/tmp/laviq_signature_matrix.so</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">main()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__libc_init_first()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__libc_start_main()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">_start()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div></div></div></div></td></tr></tbody>
+  </table>
+</div></div>
+<div class="panel" id="panel-network"><div class="section">
+  <div class="sh">
+    <div class="st"><span class="etag eb">Engine B</span>Network Protocol Analysis<span class="cc">25</span></div>
+    <div class="ss">22 quantum-vulnerable | 3 PQC-safe | TLS + SSH</div>
+  </div>
+  <table>
+    <thead><tr><th>Process</th><th>PID</th><th>Protocol</th><th>Risk</th><th>Cipher Suite</th><th>Destination</th><th>Source</th><th>Severity</th><th></th></tr></thead>
+    <tbody><tr class="fr" onclick="tog('n0')">
+  <td class="mc">laviq_signature</td>
+  <td class="mc pid-cell">54678</td>
+  <td><div class="algo-name">TLS <span class="ver-dim">1.2</span></div></td>
+  <td><span class="pill pill-v"><svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3.5" fill="#dc2626"/></svg>Vulnerable</span></td>
+  <td class="mc cipher-cell">TLS_RSA_WITH_AES_128_GCM_SHA256</td>
+  <td class="mc">127.0.0.1:9443</td>
+  <td><span class="src-chip">kernel</span></td>
+  <td><span class="badge sev-critical">CRITICAL</span></td>
+  <td class="dtog"><span class="tbtn">Details</span></td>
+</tr><tr class="dr" id="n0"><td colspan="8"><div class="dw"><div class="dp"><div class="dpt">Detection Details</div>
+<div class="mr"><span class="mk">Signature</span><span>TLS 1.2 with any cipher</span></div>
+<div class="mr"><span class="mk">Supported Group</span><span class="mc">-</span></div>
+<div class="mr"><span class="mk">Detection Source</span><span class="src-chip">kernel</span></div>
+<div class="mr"><span class="mk">L7 Assessment</span><span class="badge sev-critical">CRITICAL</span></div>
+<p class="rt" style="margin-top:10px">Upgrade to TLS 1.3 with PQC hybrid key exchange (X25519Kyber768)</p></div><div class="dp"><div class="dpt">Connection Stack (eBPF)</div><div class="sb"><div class="nd">No stack trace captured</div></div></div></div></td></tr><tr class="fr" onclick="tog('n1')">
+  <td class="mc">laviq_signature</td>
+  <td class="mc pid-cell">54678</td>
+  <td><div class="algo-name">TLS <span class="ver-dim">1.2</span></div></td>
+  <td><span class="pill pill-v"><svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3.5" fill="#dc2626"/></svg>Vulnerable</span></td>
+  <td class="mc cipher-cell">TLS_RSA_WITH_AES_128_GCM_SHA256</td>
+  <td class="mc">127.0.0.1:9443</td>
+  <td><span class="src-chip">kernel</span></td>
+  <td><span class="badge sev-critical">CRITICAL</span></td>
+  <td class="dtog"><span class="tbtn">Details</span></td>
+</tr><tr class="dr" id="n1"><td colspan="8"><div class="dw"><div class="dp"><div class="dpt">Detection Details</div>
+<div class="mr"><span class="mk">Signature</span><span>TLS 1.2 with any cipher</span></div>
+<div class="mr"><span class="mk">Supported Group</span><span class="mc">-</span></div>
+<div class="mr"><span class="mk">Detection Source</span><span class="src-chip">kernel</span></div>
+<div class="mr"><span class="mk">L7 Assessment</span><span class="badge sev-critical">CRITICAL</span></div>
+<p class="rt" style="margin-top:10px">Upgrade to TLS 1.3 with PQC hybrid key exchange (X25519Kyber768)</p></div><div class="dp"><div class="dpt">Connection Stack (eBPF)</div><div class="sb"><div class="nd">No stack trace captured</div></div></div></div></td></tr><tr class="fr" onclick="tog('n2')">
+  <td class="mc">laviq_signature</td>
+  <td class="mc pid-cell">54678</td>
+  <td><div class="algo-name">TLS <span class="ver-dim">1.2</span></div></td>
+  <td><span class="pill pill-v"><svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3.5" fill="#dc2626"/></svg>Vulnerable</span></td>
+  <td class="mc cipher-cell">TLS_RSA_WITH_AES_128_GCM_SHA256</td>
+  <td class="mc">127.0.0.1:9443</td>
+  <td><span class="src-chip">kernel</span></td>
+  <td><span class="badge sev-critical">CRITICAL</span></td>
+  <td class="dtog"><span class="tbtn">Details</span></td>
+</tr><tr class="dr" id="n2"><td colspan="8"><div class="dw"><div class="dp"><div class="dpt">Detection Details</div>
+<div class="mr"><span class="mk">Signature</span><span>TLS 1.2 with any cipher</span></div>
+<div class="mr"><span class="mk">Supported Group</span><span class="mc">-</span></div>
+<div class="mr"><span class="mk">Detection Source</span><span class="src-chip">kernel</span></div>
+<div class="mr"><span class="mk">L7 Assessment</span><span class="badge sev-critical">CRITICAL</span></div>
+<p class="rt" style="margin-top:10px">Upgrade to TLS 1.3 with PQC hybrid key exchange (X25519Kyber768)</p></div><div class="dp"><div class="dpt">Connection Stack (eBPF)</div><div class="sb"><div class="nd">No stack trace captured</div></div></div></div></td></tr><tr class="fr" onclick="tog('n3')">
+  <td class="mc">laviq_signature</td>
+  <td class="mc pid-cell">54678</td>
+  <td><div class="algo-name">SSH <span class="ver-dim">2</span></div></td>
+  <td><span class="pill pill-v"><svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3.5" fill="#dc2626"/></svg>Vulnerable</span></td>
+  <td class="mc cipher-cell">-</td>
+  <td class="mc">127.0.0.1:22</td>
+  <td><span class="src-chip">l4</span></td>
+  <td><span class="badge sev-high">HIGH</span></td>
+  <td class="dtog"><span class="tbtn">Details</span></td>
+</tr><tr class="dr" id="n3"><td colspan="8"><div class="dw"><div class="dp"><div class="dpt">Detection Details</div>
+<div class="mr"><span class="mk">Signature</span><span>SSH connections</span></div>
+<div class="mr"><span class="mk">Supported Group</span><span class="mc">-</span></div>
+<div class="mr"><span class="mk">Detection Source</span><span class="src-chip">l4</span></div>
+
+<p class="rt" style="margin-top:10px">SSH connections use quantum-vulnerable algorithms. Monitor for SSH PQC standards.</p></div><div class="dp"><div class="dpt">Connection Stack (eBPF)</div><div class="sb"><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__connect()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">main()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__libc_init_first()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__libc_start_main()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">_start()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div></div></div></div></td></tr><tr class="fr" onclick="tog('n4')">
+  <td class="mc">laviq_signature</td>
+  <td class="mc pid-cell">54678</td>
+  <td><div class="algo-name">TLS <span class="ver-dim">1.3</span></div></td>
+  <td><span class="pill pill-v"><svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3.5" fill="#dc2626"/></svg>Vulnerable</span></td>
+  <td class="mc cipher-cell">TLS_AES_128_GCM_SHA256</td>
+  <td class="mc">127.0.0.1:9443</td>
+  <td><span class="src-chip">kernel</span></td>
+  <td><span class="badge sev-high">HIGH</span></td>
+  <td class="dtog"><span class="tbtn">Details</span></td>
+</tr><tr class="dr" id="n4"><td colspan="8"><div class="dw"><div class="dp"><div class="dpt">Detection Details</div>
+<div class="mr"><span class="mk">Signature</span><span>TLS 1.3 with X25519</span></div>
+<div class="mr"><span class="mk">Supported Group</span><span class="mc">0x001D</span></div>
+<div class="mr"><span class="mk">Detection Source</span><span class="src-chip">kernel</span></div>
+<div class="mr"><span class="mk">L7 Assessment</span><span class="badge sev-high">HIGH</span></div>
+<p class="rt" style="margin-top:10px">Upgrade to X25519Kyber768 hybrid for quantum resistance</p></div><div class="dp"><div class="dpt">Connection Stack (eBPF)</div><div class="sb"><div class="nd">No stack trace captured</div></div></div></div></td></tr><tr class="fr" onclick="tog('n5')">
+  <td class="mc">laviq_signature</td>
+  <td class="mc pid-cell">54678</td>
+  <td><div class="algo-name">TLS <span class="ver-dim">1.3</span></div></td>
+  <td><span class="pill pill-v"><svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3.5" fill="#dc2626"/></svg>Vulnerable</span></td>
+  <td class="mc cipher-cell">TLS_AES_128_GCM_SHA256</td>
+  <td class="mc">127.0.0.1:9443</td>
+  <td><span class="src-chip">kernel</span></td>
+  <td><span class="badge sev-high">HIGH</span></td>
+  <td class="dtog"><span class="tbtn">Details</span></td>
+</tr><tr class="dr" id="n5"><td colspan="8"><div class="dw"><div class="dp"><div class="dpt">Detection Details</div>
+<div class="mr"><span class="mk">Signature</span><span>TLS 1.3 generic</span></div>
+<div class="mr"><span class="mk">Supported Group</span><span class="mc">0x1234</span></div>
+<div class="mr"><span class="mk">Detection Source</span><span class="src-chip">kernel</span></div>
+<div class="mr"><span class="mk">L7 Assessment</span><span class="badge sev-high">HIGH</span></div>
+<p class="rt" style="margin-top:10px">Upgrade to X25519Kyber768 hybrid for quantum resistance</p></div><div class="dp"><div class="dpt">Connection Stack (eBPF)</div><div class="sb"><div class="nd">No stack trace captured</div></div></div></div></td></tr><tr class="fr" onclick="tog('n6')">
+  <td class="mc">laviq_signature</td>
+  <td class="mc pid-cell">54678</td>
+  <td><div class="algo-name">SSH <span class="ver-dim">2</span></div></td>
+  <td><span class="pill pill-v"><svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3.5" fill="#dc2626"/></svg>Vulnerable</span></td>
+  <td class="mc cipher-cell">-</td>
+  <td class="mc">127.0.0.1:22</td>
+  <td><span class="src-chip">l4</span></td>
+  <td><span class="badge sev-high">HIGH</span></td>
+  <td class="dtog"><span class="tbtn">Details</span></td>
+</tr><tr class="dr" id="n6"><td colspan="8"><div class="dw"><div class="dp"><div class="dpt">Detection Details</div>
+<div class="mr"><span class="mk">Signature</span><span>SSH connections</span></div>
+<div class="mr"><span class="mk">Supported Group</span><span class="mc">-</span></div>
+<div class="mr"><span class="mk">Detection Source</span><span class="src-chip">l4</span></div>
+
+<p class="rt" style="margin-top:10px">SSH connections use quantum-vulnerable algorithms. Monitor for SSH PQC standards.</p></div><div class="dp"><div class="dpt">Connection Stack (eBPF)</div><div class="sb"><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__connect()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">send_ssh_pattern()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">main()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__libc_init_first()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__libc_start_main()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">_start()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div></div></div></div></td></tr><tr class="fr" onclick="tog('n7')">
+  <td class="mc">laviq_signature</td>
+  <td class="mc pid-cell">54678</td>
+  <td><div class="algo-name">SSH <span class="ver-dim">2</span></div></td>
+  <td><span class="pill pill-v"><svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3.5" fill="#dc2626"/></svg>Vulnerable</span></td>
+  <td class="mc cipher-cell">-</td>
+  <td class="mc">127.0.0.1:22</td>
+  <td><span class="src-chip">l4 + l7</span></td>
+  <td><span class="badge sev-high">HIGH</span></td>
+  <td class="dtog"><span class="tbtn">Details</span></td>
+</tr><tr class="dr" id="n7"><td colspan="8"><div class="dw"><div class="dp"><div class="dpt">Detection Details</div>
+<div class="mr"><span class="mk">Signature</span><span>SSH with RSA Host Keys</span></div>
+<div class="mr"><span class="mk">Supported Group</span><span class="mc">-</span></div>
+<div class="mr"><span class="mk">Detection Source</span><span class="src-chip">l4 + l7</span></div>
+<div class="mr"><span class="mk">L7 Assessment</span><span class="badge sev-high">HIGH</span></div>
+<p class="rt" style="margin-top:10px">Migrate to Ed25519 (ssh-ed25519) host keys</p></div><div class="dp"><div class="dpt">Connection Stack (eBPF)</div><div class="sb"><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__connect()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">send_ssh_pattern()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">main()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__libc_init_first()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__libc_start_main()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">_start()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div></div></div></div></td></tr><tr class="fr" onclick="tog('n8')">
+  <td class="mc">laviq_signature</td>
+  <td class="mc pid-cell">54678</td>
+  <td><div class="algo-name">SSH <span class="ver-dim">2</span></div></td>
+  <td><span class="pill pill-v"><svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3.5" fill="#dc2626"/></svg>Vulnerable</span></td>
+  <td class="mc cipher-cell">-</td>
+  <td class="mc">127.0.0.1:22</td>
+  <td><span class="src-chip">l4 + l7</span></td>
+  <td><span class="badge sev-high">HIGH</span></td>
+  <td class="dtog"><span class="tbtn">Details</span></td>
+</tr><tr class="dr" id="n8"><td colspan="8"><div class="dw"><div class="dp"><div class="dpt">Detection Details</div>
+<div class="mr"><span class="mk">Signature</span><span>SSH Key Exchange with ECDH</span></div>
+<div class="mr"><span class="mk">Supported Group</span><span class="mc">-</span></div>
+<div class="mr"><span class="mk">Detection Source</span><span class="src-chip">l4 + l7</span></div>
+<div class="mr"><span class="mk">L7 Assessment</span><span class="badge sev-high">HIGH</span></div>
+<p class="rt" style="margin-top:10px">Monitor for SSH PQC key exchange standards</p></div><div class="dp"><div class="dpt">Connection Stack (eBPF)</div><div class="sb"><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__connect()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">send_ssh_pattern()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">main()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__libc_init_first()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__libc_start_main()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">_start()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div></div></div></div></td></tr><tr class="fr" onclick="tog('n9')">
+  <td class="mc">laviq_signature</td>
+  <td class="mc pid-cell">54678</td>
+  <td><div class="algo-name">TLS <span class="ver-dim">1.3</span></div></td>
+  <td><span class="pill pill-v"><svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3.5" fill="#dc2626"/></svg>Vulnerable</span></td>
+  <td class="mc cipher-cell">TLS_AES_128_GCM_SHA256</td>
+  <td class="mc">127.0.0.1:9443</td>
+  <td><span class="src-chip">kernel</span></td>
+  <td><span class="badge sev-high">HIGH</span></td>
+  <td class="dtog"><span class="tbtn">Details</span></td>
+</tr><tr class="dr" id="n9"><td colspan="8"><div class="dw"><div class="dp"><div class="dpt">Detection Details</div>
+<div class="mr"><span class="mk">Signature</span><span>TLS 1.3 with X25519</span></div>
+<div class="mr"><span class="mk">Supported Group</span><span class="mc">0x001D</span></div>
+<div class="mr"><span class="mk">Detection Source</span><span class="src-chip">kernel</span></div>
+<div class="mr"><span class="mk">L7 Assessment</span><span class="badge sev-high">HIGH</span></div>
+<p class="rt" style="margin-top:10px">Upgrade to X25519Kyber768 hybrid for quantum resistance</p></div><div class="dp"><div class="dpt">Connection Stack (eBPF)</div><div class="sb"><div class="nd">No stack trace captured</div></div></div></div></td></tr><tr class="fr" onclick="tog('n10')">
+  <td class="mc">laviq_signature</td>
+  <td class="mc pid-cell">54678</td>
+  <td><div class="algo-name">TLS <span class="ver-dim">1.3</span></div></td>
+  <td><span class="pill pill-v"><svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3.5" fill="#dc2626"/></svg>Vulnerable</span></td>
+  <td class="mc cipher-cell">TLS_AES_128_GCM_SHA256</td>
+  <td class="mc">127.0.0.1:9443</td>
+  <td><span class="src-chip">kernel</span></td>
+  <td><span class="badge sev-high">HIGH</span></td>
+  <td class="dtog"><span class="tbtn">Details</span></td>
+</tr><tr class="dr" id="n10"><td colspan="8"><div class="dw"><div class="dp"><div class="dpt">Detection Details</div>
+<div class="mr"><span class="mk">Signature</span><span>TLS 1.3 generic</span></div>
+<div class="mr"><span class="mk">Supported Group</span><span class="mc">0x1234</span></div>
+<div class="mr"><span class="mk">Detection Source</span><span class="src-chip">kernel</span></div>
+<div class="mr"><span class="mk">L7 Assessment</span><span class="badge sev-high">HIGH</span></div>
+<p class="rt" style="margin-top:10px">Upgrade to X25519Kyber768 hybrid for quantum resistance</p></div><div class="dp"><div class="dpt">Connection Stack (eBPF)</div><div class="sb"><div class="nd">No stack trace captured</div></div></div></div></td></tr><tr class="fr" onclick="tog('n11')">
+  <td class="mc">laviq_signature</td>
+  <td class="mc pid-cell">54678</td>
+  <td><div class="algo-name">SSH <span class="ver-dim">2</span></div></td>
+  <td><span class="pill pill-v"><svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3.5" fill="#dc2626"/></svg>Vulnerable</span></td>
+  <td class="mc cipher-cell">-</td>
+  <td class="mc">127.0.0.1:22</td>
+  <td><span class="src-chip">l4 + l7</span></td>
+  <td><span class="badge sev-high">HIGH</span></td>
+  <td class="dtog"><span class="tbtn">Details</span></td>
+</tr><tr class="dr" id="n11"><td colspan="8"><div class="dw"><div class="dp"><div class="dpt">Detection Details</div>
+<div class="mr"><span class="mk">Signature</span><span>SSH Key Exchange with ECDH</span></div>
+<div class="mr"><span class="mk">Supported Group</span><span class="mc">-</span></div>
+<div class="mr"><span class="mk">Detection Source</span><span class="src-chip">l4 + l7</span></div>
+<div class="mr"><span class="mk">L7 Assessment</span><span class="badge sev-high">HIGH</span></div>
+<p class="rt" style="margin-top:10px">Monitor for SSH PQC key exchange standards</p></div><div class="dp"><div class="dpt">Connection Stack (eBPF)</div><div class="sb"><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__connect()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">send_ssh_pattern()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">main()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__libc_init_first()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__libc_start_main()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">_start()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div></div></div></div></td></tr><tr class="fr" onclick="tog('n12')">
+  <td class="mc">laviq_signature</td>
+  <td class="mc pid-cell">54678</td>
+  <td><div class="algo-name">SSH <span class="ver-dim">2</span></div></td>
+  <td><span class="pill pill-v"><svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3.5" fill="#dc2626"/></svg>Vulnerable</span></td>
+  <td class="mc cipher-cell">-</td>
+  <td class="mc">127.0.0.1:22</td>
+  <td><span class="src-chip">l4 + l7</span></td>
+  <td><span class="badge sev-high">HIGH</span></td>
+  <td class="dtog"><span class="tbtn">Details</span></td>
+</tr><tr class="dr" id="n12"><td colspan="8"><div class="dw"><div class="dp"><div class="dpt">Detection Details</div>
+<div class="mr"><span class="mk">Signature</span><span>SSH with RSA Host Keys</span></div>
+<div class="mr"><span class="mk">Supported Group</span><span class="mc">-</span></div>
+<div class="mr"><span class="mk">Detection Source</span><span class="src-chip">l4 + l7</span></div>
+<div class="mr"><span class="mk">L7 Assessment</span><span class="badge sev-high">HIGH</span></div>
+<p class="rt" style="margin-top:10px">Migrate to Ed25519 (ssh-ed25519) host keys</p></div><div class="dp"><div class="dpt">Connection Stack (eBPF)</div><div class="sb"><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__connect()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">send_ssh_pattern()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">main()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__libc_init_first()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__libc_start_main()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">_start()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div></div></div></div></td></tr><tr class="fr" onclick="tog('n13')">
+  <td class="mc">laviq_signature</td>
+  <td class="mc pid-cell">54678</td>
+  <td><div class="algo-name">SSH <span class="ver-dim">2</span></div></td>
+  <td><span class="pill pill-v"><svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3.5" fill="#dc2626"/></svg>Vulnerable</span></td>
+  <td class="mc cipher-cell">-</td>
+  <td class="mc">127.0.0.1:22</td>
+  <td><span class="src-chip">l4 + l7</span></td>
+  <td><span class="badge sev-high">HIGH</span></td>
+  <td class="dtog"><span class="tbtn">Details</span></td>
+</tr><tr class="dr" id="n13"><td colspan="8"><div class="dw"><div class="dp"><div class="dpt">Detection Details</div>
+<div class="mr"><span class="mk">Signature</span><span>SSH Key Exchange with ECDH</span></div>
+<div class="mr"><span class="mk">Supported Group</span><span class="mc">-</span></div>
+<div class="mr"><span class="mk">Detection Source</span><span class="src-chip">l4 + l7</span></div>
+<div class="mr"><span class="mk">L7 Assessment</span><span class="badge sev-high">HIGH</span></div>
+<p class="rt" style="margin-top:10px">Monitor for SSH PQC key exchange standards</p></div><div class="dp"><div class="dpt">Connection Stack (eBPF)</div><div class="sb"><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__connect()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">send_ssh_pattern()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">main()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__libc_init_first()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__libc_start_main()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">_start()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div></div></div></div></td></tr><tr class="fr" onclick="tog('n14')">
+  <td class="mc">laviq_signature</td>
+  <td class="mc pid-cell">54678</td>
+  <td><div class="algo-name">TLS <span class="ver-dim">1.3</span></div></td>
+  <td><span class="pill pill-v"><svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3.5" fill="#dc2626"/></svg>Vulnerable</span></td>
+  <td class="mc cipher-cell">TLS_AES_128_GCM_SHA256</td>
+  <td class="mc">127.0.0.1:9443</td>
+  <td><span class="src-chip">kernel</span></td>
+  <td><span class="badge sev-high">HIGH</span></td>
+  <td class="dtog"><span class="tbtn">Details</span></td>
+</tr><tr class="dr" id="n14"><td colspan="8"><div class="dw"><div class="dp"><div class="dpt">Detection Details</div>
+<div class="mr"><span class="mk">Signature</span><span>TLS 1.3 with X25519</span></div>
+<div class="mr"><span class="mk">Supported Group</span><span class="mc">0x001D</span></div>
+<div class="mr"><span class="mk">Detection Source</span><span class="src-chip">kernel</span></div>
+<div class="mr"><span class="mk">L7 Assessment</span><span class="badge sev-high">HIGH</span></div>
+<p class="rt" style="margin-top:10px">Upgrade to X25519Kyber768 hybrid for quantum resistance</p></div><div class="dp"><div class="dpt">Connection Stack (eBPF)</div><div class="sb"><div class="nd">No stack trace captured</div></div></div></div></td></tr><tr class="fr" onclick="tog('n15')">
+  <td class="mc">laviq_signature</td>
+  <td class="mc pid-cell">54678</td>
+  <td><div class="algo-name">TLS <span class="ver-dim">1.3</span></div></td>
+  <td><span class="pill pill-v"><svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3.5" fill="#dc2626"/></svg>Vulnerable</span></td>
+  <td class="mc cipher-cell">TLS_AES_128_GCM_SHA256</td>
+  <td class="mc">127.0.0.1:9443</td>
+  <td><span class="src-chip">kernel</span></td>
+  <td><span class="badge sev-high">HIGH</span></td>
+  <td class="dtog"><span class="tbtn">Details</span></td>
+</tr><tr class="dr" id="n15"><td colspan="8"><div class="dw"><div class="dp"><div class="dpt">Detection Details</div>
+<div class="mr"><span class="mk">Signature</span><span>TLS 1.3 generic</span></div>
+<div class="mr"><span class="mk">Supported Group</span><span class="mc">0x1234</span></div>
+<div class="mr"><span class="mk">Detection Source</span><span class="src-chip">kernel</span></div>
+<div class="mr"><span class="mk">L7 Assessment</span><span class="badge sev-high">HIGH</span></div>
+<p class="rt" style="margin-top:10px">Upgrade to X25519Kyber768 hybrid for quantum resistance</p></div><div class="dp"><div class="dpt">Connection Stack (eBPF)</div><div class="sb"><div class="nd">No stack trace captured</div></div></div></div></td></tr><tr class="fr" onclick="tog('n16')">
+  <td class="mc">laviq_signature</td>
+  <td class="mc pid-cell">54678</td>
+  <td><div class="algo-name">SSH <span class="ver-dim">2</span></div></td>
+  <td><span class="pill pill-v"><svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3.5" fill="#dc2626"/></svg>Vulnerable</span></td>
+  <td class="mc cipher-cell">-</td>
+  <td class="mc">127.0.0.1:22</td>
+  <td><span class="src-chip">l4 + l7</span></td>
+  <td><span class="badge sev-high">HIGH</span></td>
+  <td class="dtog"><span class="tbtn">Details</span></td>
+</tr><tr class="dr" id="n16"><td colspan="8"><div class="dw"><div class="dp"><div class="dpt">Detection Details</div>
+<div class="mr"><span class="mk">Signature</span><span>SSH Key Exchange with ECDH</span></div>
+<div class="mr"><span class="mk">Supported Group</span><span class="mc">-</span></div>
+<div class="mr"><span class="mk">Detection Source</span><span class="src-chip">l4 + l7</span></div>
+<div class="mr"><span class="mk">L7 Assessment</span><span class="badge sev-high">HIGH</span></div>
+<p class="rt" style="margin-top:10px">Monitor for SSH PQC key exchange standards</p></div><div class="dp"><div class="dpt">Connection Stack (eBPF)</div><div class="sb"><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__connect()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">send_ssh_pattern()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">main()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__libc_init_first()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__libc_start_main()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">_start()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div></div></div></div></td></tr><tr class="fr" onclick="tog('n17')">
+  <td class="mc">laviq_signature</td>
+  <td class="mc pid-cell">54678</td>
+  <td><div class="algo-name">SSH <span class="ver-dim">2</span></div></td>
+  <td><span class="pill pill-v"><svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3.5" fill="#dc2626"/></svg>Vulnerable</span></td>
+  <td class="mc cipher-cell">-</td>
+  <td class="mc">127.0.0.1:22</td>
+  <td><span class="src-chip">l4 + l7</span></td>
+  <td><span class="badge sev-high">HIGH</span></td>
+  <td class="dtog"><span class="tbtn">Details</span></td>
+</tr><tr class="dr" id="n17"><td colspan="8"><div class="dw"><div class="dp"><div class="dpt">Detection Details</div>
+<div class="mr"><span class="mk">Signature</span><span>SSH with RSA Host Keys</span></div>
+<div class="mr"><span class="mk">Supported Group</span><span class="mc">-</span></div>
+<div class="mr"><span class="mk">Detection Source</span><span class="src-chip">l4 + l7</span></div>
+<div class="mr"><span class="mk">L7 Assessment</span><span class="badge sev-high">HIGH</span></div>
+<p class="rt" style="margin-top:10px">Migrate to Ed25519 (ssh-ed25519) host keys</p></div><div class="dp"><div class="dpt">Connection Stack (eBPF)</div><div class="sb"><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__connect()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">send_ssh_pattern()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">main()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__libc_init_first()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__libc_start_main()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">_start()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div></div></div></div></td></tr><tr class="fr" onclick="tog('n18')">
+  <td class="mc">laviq_signature</td>
+  <td class="mc pid-cell">54678</td>
+  <td><div class="algo-name">SSH <span class="ver-dim">2</span></div></td>
+  <td><span class="pill pill-v"><svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3.5" fill="#dc2626"/></svg>Vulnerable</span></td>
+  <td class="mc cipher-cell">-</td>
+  <td class="mc">127.0.0.1:22</td>
+  <td><span class="src-chip">l4 + l7</span></td>
+  <td><span class="badge sev-high">HIGH</span></td>
+  <td class="dtog"><span class="tbtn">Details</span></td>
+</tr><tr class="dr" id="n18"><td colspan="8"><div class="dw"><div class="dp"><div class="dpt">Detection Details</div>
+<div class="mr"><span class="mk">Signature</span><span>SSH Key Exchange with ECDH</span></div>
+<div class="mr"><span class="mk">Supported Group</span><span class="mc">-</span></div>
+<div class="mr"><span class="mk">Detection Source</span><span class="src-chip">l4 + l7</span></div>
+<div class="mr"><span class="mk">L7 Assessment</span><span class="badge sev-high">HIGH</span></div>
+<p class="rt" style="margin-top:10px">Monitor for SSH PQC key exchange standards</p></div><div class="dp"><div class="dpt">Connection Stack (eBPF)</div><div class="sb"><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__connect()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">send_ssh_pattern()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">main()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__libc_init_first()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__libc_start_main()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">_start()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div></div></div></div></td></tr><tr class="fr" onclick="tog('n19')">
+  <td class="mc">laviq_signature</td>
+  <td class="mc pid-cell">54678</td>
+  <td><div class="algo-name">SSH <span class="ver-dim">2</span></div></td>
+  <td><span class="pill pill-v"><svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3.5" fill="#dc2626"/></svg>Vulnerable</span></td>
+  <td class="mc cipher-cell">-</td>
+  <td class="mc">127.0.0.1:22</td>
+  <td><span class="src-chip">l4 + l7</span></td>
+  <td><span class="badge sev-medium">MEDIUM</span></td>
+  <td class="dtog"><span class="tbtn">Details</span></td>
+</tr><tr class="dr" id="n19"><td colspan="8"><div class="dw"><div class="dp"><div class="dpt">Detection Details</div>
+<div class="mr"><span class="mk">Signature</span><span>SSH with Ed25519</span></div>
+<div class="mr"><span class="mk">Supported Group</span><span class="mc">-</span></div>
+<div class="mr"><span class="mk">Detection Source</span><span class="src-chip">l4 + l7</span></div>
+<div class="mr"><span class="mk">L7 Assessment</span><span class="badge sev-medium">MEDIUM</span></div>
+<p class="rt" style="margin-top:10px">Ed25519 is quantum vulnerable. Monitor for SSH PQC standards.</p></div><div class="dp"><div class="dpt">Connection Stack (eBPF)</div><div class="sb"><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__connect()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">send_ssh_pattern()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">main()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__libc_init_first()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__libc_start_main()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">_start()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div></div></div></div></td></tr><tr class="fr" onclick="tog('n20')">
+  <td class="mc">laviq_signature</td>
+  <td class="mc pid-cell">54678</td>
+  <td><div class="algo-name">SSH <span class="ver-dim">2</span></div></td>
+  <td><span class="pill pill-v"><svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3.5" fill="#dc2626"/></svg>Vulnerable</span></td>
+  <td class="mc cipher-cell">-</td>
+  <td class="mc">127.0.0.1:22</td>
+  <td><span class="src-chip">l4 + l7</span></td>
+  <td><span class="badge sev-medium">MEDIUM</span></td>
+  <td class="dtog"><span class="tbtn">Details</span></td>
+</tr><tr class="dr" id="n20"><td colspan="8"><div class="dw"><div class="dp"><div class="dpt">Detection Details</div>
+<div class="mr"><span class="mk">Signature</span><span>SSH with Ed25519</span></div>
+<div class="mr"><span class="mk">Supported Group</span><span class="mc">-</span></div>
+<div class="mr"><span class="mk">Detection Source</span><span class="src-chip">l4 + l7</span></div>
+<div class="mr"><span class="mk">L7 Assessment</span><span class="badge sev-medium">MEDIUM</span></div>
+<p class="rt" style="margin-top:10px">Ed25519 is quantum vulnerable. Monitor for SSH PQC standards.</p></div><div class="dp"><div class="dpt">Connection Stack (eBPF)</div><div class="sb"><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__connect()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">send_ssh_pattern()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">main()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__libc_init_first()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__libc_start_main()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">_start()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div></div></div></div></td></tr><tr class="fr" onclick="tog('n21')">
+  <td class="mc">laviq_signature</td>
+  <td class="mc pid-cell">54678</td>
+  <td><div class="algo-name">SSH <span class="ver-dim">2</span></div></td>
+  <td><span class="pill pill-v"><svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3.5" fill="#dc2626"/></svg>Vulnerable</span></td>
+  <td class="mc cipher-cell">-</td>
+  <td class="mc">127.0.0.1:22</td>
+  <td><span class="src-chip">l4 + l7</span></td>
+  <td><span class="badge sev-medium">MEDIUM</span></td>
+  <td class="dtog"><span class="tbtn">Details</span></td>
+</tr><tr class="dr" id="n21"><td colspan="8"><div class="dw"><div class="dp"><div class="dpt">Detection Details</div>
+<div class="mr"><span class="mk">Signature</span><span>SSH with Ed25519</span></div>
+<div class="mr"><span class="mk">Supported Group</span><span class="mc">-</span></div>
+<div class="mr"><span class="mk">Detection Source</span><span class="src-chip">l4 + l7</span></div>
+<div class="mr"><span class="mk">L7 Assessment</span><span class="badge sev-medium">MEDIUM</span></div>
+<p class="rt" style="margin-top:10px">Ed25519 is quantum vulnerable. Monitor for SSH PQC standards.</p></div><div class="dp"><div class="dpt">Connection Stack (eBPF)</div><div class="sb"><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__connect()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">send_ssh_pattern()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">main()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__libc_init_first()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">__libc_start_main()</span><span class="sfl">/usr/lib/aarch64-linux-gnu/libc.so.6</span></div><div class="sf">
+<span class="stag" style="color:#60a5fa;border-color:#60a5fa30;background:#60a5fa10">C</span>
+<span class="sfn">_start()</span><span class="sfl">/tmp/laviq_signature_matrix_c</span></div></div></div></div></td></tr><tr class="fr" onclick="tog('n22')">
+  <td class="mc">laviq_signature</td>
+  <td class="mc pid-cell">54678</td>
+  <td><div class="algo-name">TLS <span class="ver-dim">1.3</span></div></td>
+  <td><span class="pill pill-s"><svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3.5" fill="#059669"/></svg>Safe</span></td>
+  <td class="mc cipher-cell">TLS_AES_128_GCM_SHA256</td>
+  <td class="mc">127.0.0.1:9443</td>
+  <td><span class="src-chip">kernel</span></td>
+  <td><span class="badge sev-safe">PQC READY</span></td>
+  <td class="dtog"><span class="tbtn">Details</span></td>
+</tr><tr class="dr" id="n22"><td colspan="8"><div class="dw"><div class="dp"><div class="dpt">Detection Details</div>
+<div class="mr"><span class="mk">Signature</span><span>TLS 1.3 with X25519Kyber768 Hybrid</span></div>
+<div class="mr"><span class="mk">Supported Group</span><span class="mc">0x6399</span></div>
+<div class="mr"><span class="mk">Detection Source</span><span class="src-chip">kernel</span></div>
+<div class="mr"><span class="mk">L7 Assessment</span><span class="badge sev-safe">PQC READY</span></div>
+<p class="rt" style="margin-top:10px">Compliant with hybrid PQC standards. No action required.</p></div><div class="dp"><div class="dpt">Connection Stack (eBPF)</div><div class="sb"><div class="nd">No stack trace captured</div></div></div></div></td></tr><tr class="fr" onclick="tog('n23')">
+  <td class="mc">laviq_signature</td>
+  <td class="mc pid-cell">54678</td>
+  <td><div class="algo-name">TLS <span class="ver-dim">1.3</span></div></td>
+  <td><span class="pill pill-s"><svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3.5" fill="#059669"/></svg>Safe</span></td>
+  <td class="mc cipher-cell">TLS_AES_128_GCM_SHA256</td>
+  <td class="mc">127.0.0.1:9443</td>
+  <td><span class="src-chip">kernel</span></td>
+  <td><span class="badge sev-safe">PQC READY</span></td>
+  <td class="dtog"><span class="tbtn">Details</span></td>
+</tr><tr class="dr" id="n23"><td colspan="8"><div class="dw"><div class="dp"><div class="dpt">Detection Details</div>
+<div class="mr"><span class="mk">Signature</span><span>TLS 1.3 with X25519Kyber768 Hybrid</span></div>
+<div class="mr"><span class="mk">Supported Group</span><span class="mc">0x6399</span></div>
+<div class="mr"><span class="mk">Detection Source</span><span class="src-chip">kernel</span></div>
+<div class="mr"><span class="mk">L7 Assessment</span><span class="badge sev-safe">PQC READY</span></div>
+<p class="rt" style="margin-top:10px">Compliant with hybrid PQC standards. No action required.</p></div><div class="dp"><div class="dpt">Connection Stack (eBPF)</div><div class="sb"><div class="nd">No stack trace captured</div></div></div></div></td></tr><tr class="fr" onclick="tog('n24')">
+  <td class="mc">laviq_signature</td>
+  <td class="mc pid-cell">54678</td>
+  <td><div class="algo-name">TLS <span class="ver-dim">1.3</span></div></td>
+  <td><span class="pill pill-s"><svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3.5" fill="#059669"/></svg>Safe</span></td>
+  <td class="mc cipher-cell">TLS_AES_128_GCM_SHA256</td>
+  <td class="mc">127.0.0.1:9443</td>
+  <td><span class="src-chip">kernel</span></td>
+  <td><span class="badge sev-safe">PQC READY</span></td>
+  <td class="dtog"><span class="tbtn">Details</span></td>
+</tr><tr class="dr" id="n24"><td colspan="8"><div class="dw"><div class="dp"><div class="dpt">Detection Details</div>
+<div class="mr"><span class="mk">Signature</span><span>TLS 1.3 with X25519Kyber768 Hybrid</span></div>
+<div class="mr"><span class="mk">Supported Group</span><span class="mc">0x6399</span></div>
+<div class="mr"><span class="mk">Detection Source</span><span class="src-chip">kernel</span></div>
+<div class="mr"><span class="mk">L7 Assessment</span><span class="badge sev-safe">PQC READY</span></div>
+<p class="rt" style="margin-top:10px">Compliant with hybrid PQC standards. No action required.</p></div><div class="dp"><div class="dpt">Connection Stack (eBPF)</div><div class="sb"><div class="nd">No stack trace captured</div></div></div></div></td></tr></tbody>
+  </table>
+</div></div>
+<footer>
+  Generated by <strong>Laviq</strong> &mdash;
+  eBPF Runtime Detection &mdash;
+  No source code required &mdash;
+  2026-03-07 15:42 UTC
+</footer>
+<script>function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelector(`[onclick="switchTab('${name}')"]`).classList.add('active');
+  document.getElementById('panel-' + name).classList.add('active');
+  document.querySelectorAll('.dr.open').forEach(r => r.classList.remove('open'));
+}
+function tog(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const was = el.classList.contains('open');
+  document.querySelectorAll('.dr.open').forEach(r => r.classList.remove('open'));
+  if (!was) el.classList.add('open');
+}</script>
+</body></html>
