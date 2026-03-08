@@ -2,6 +2,9 @@
 
 > **The Forensic UI for Runtime Cryptography.** This repository contains the engine used to transform Laviq's raw runtime evidence into audit-ready, human-readable reports.
 
+## 🚀 See it in Action
+**[Click here to view a Live Sample PQC Audit Report](https://laviq-security.github.io/laviq-html-reporter/laviq_signature_matrix_c_report.html)**
+
 ## Overview
 Laviq's **Runtime Truth Engine** captures deep execution traces from Linux environments. This reporter takes that structured JSON evidence and generates a standalone, forensic HTML report—designed to be shared with CISOs, auditors, and engineering leads.
 
